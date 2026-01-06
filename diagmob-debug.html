@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Debug Colonnes Grist</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .info {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 10px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .key {
+      color: #0066cc;
+      font-weight: bold;
+    }
+    .value {
+      color: #333;
+    }
+    h2 {
+      color: #667eea;
+    }
+    pre {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Debug Colonnes Grist</h1>
+  <p>Sélectionne une ligne dans ta table pour voir les noms de colonnes disponibles</p>
+  
+  <div id="output"></div>
+
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  
+  <script>
+    grist.ready({ requiredAccess: 'read table' });
+    
+    grist.onRecord(function(record) {
+      const output = document.getElementById('output');
+      
+      // Affiche tous les champs disponibles
+      let html = '<div class="info">';
+      html += '<h2>📊 Colonnes disponibles dans ce record :</h2>';
+      html += '<p>Voici TOUS les noms de colonnes tels que Grist les voit :</p>';
+      html += '<pre>';
+      
+      for (const [key, value] of Object.entries(record)) {
+        if (key !== 'id') {
+          html += `<span class="key">${key}</span>: <span class="value">${value}</span>\n`;
+        }
+      }
+      
+      html += '</pre>';
+      html += '</div>';
+      
+      // Cherche les colonnes GPS
+      html += '<div class="info">';
+      html += '<h2>🗺️ Colonnes GPS détectées :</h2>';
+      
+      const gpsColumns = {};
+      for (const [key, value] of Object.entries(record)) {
+        if (key.toLowerCase().includes('gps') || 
+            key.toLowerCase().includes('latitude') || 
+            key.toLowerCase().includes('longitude')) {
+          gpsColumns[key] = value;
+        }
+      }
+      
+      if (Object.keys(gpsColumns).length > 0) {
+        html += '<pre>';
+        for (const [key, value] of Object.entries(gpsColumns)) {
+          html += `<span class="key">${key}</span>: <span class="value">${value}</span>\n`;
+        }
+        html += '</pre>';
+      } else {
+        html += '<p style="color: red;">❌ Aucune colonne GPS détectée !</p>';
+      }
+      
+      html += '</div>';
+      
+      // Instructions
+      html += '<div class="info">';
+      html += '<h2>📋 Marche à suivre :</h2>';
+      html += '<ol>';
+      html += '<li>Copie les noms EXACTS des colonnes GPS ci-dessus</li>';
+      html += '<li>Vérifie que ces noms correspondent à ce que le widget attend</li>';
+      html += '<li>Si différent, soit renomme dans Grist, soit modifie le code du widget</li>';
+      html += '</ol>';
+      html += '</div>';
+      
+      output.innerHTML = html;
+    });
+  </script>
+</body>
+</html>
