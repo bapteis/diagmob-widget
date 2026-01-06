@@ -242,6 +242,8 @@
     }
     
     // ========== GRIST API ==========
+    let selectedTable;
+    
     grist.ready({
       requiredAccess: 'full',
       columns: [
@@ -250,6 +252,11 @@
         { name: 'Travail_X_longitude_GPS', type: 'Numeric', optional: true },
         { name: 'Travail_Y_latitude_GPS', type: 'Numeric', optional: true }
       ]
+    });
+    
+    grist.onRecords(async function(records, mappings) {
+      // Stocke la référence à la table
+      selectedTable = await grist.getTable();
     });
     
     grist.onRecord(function(record) {
@@ -404,6 +411,11 @@
         return;
       }
       
+      if (!selectedTable) {
+        showStatus('❌ Table non initialisée', 'error');
+        return;
+      }
+      
       this.disabled = true;
       showStatus('💾 Enregistrement...', 'info');
       
@@ -429,12 +441,11 @@
         
         console.log('Mise à jour Grist:', updates);
         
-        // Méthode alternative : utiliser directement le nom de la table
-        const tableId = 'DiagMob_test_V1';
-        
-        await grist.docApi.applyUserActions([
-          ['UpdateRecord', tableId, currentRecord.id, updates]
-        ]);
+        // Utilise l'API selectedTable
+        await selectedTable.update({
+          id: currentRecord.id,
+          fields: updates
+        });
         
         showStatus('✅ Enregistré dans Grist !', 'success');
         
