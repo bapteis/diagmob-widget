@@ -429,8 +429,11 @@
         
         console.log('Mise à jour Grist:', updates);
         
+        // Méthode alternative : utiliser directement le nom de la table
+        const tableId = 'DiagMob_test_V1';
+        
         await grist.docApi.applyUserActions([
-          ['UpdateRecord', grist.getTable(), currentRecord.id, updates]
+          ['UpdateRecord', tableId, currentRecord.id, updates]
         ]);
         
         showStatus('✅ Enregistré dans Grist !', 'success');
