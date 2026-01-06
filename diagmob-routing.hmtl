@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DiagMob Routing - Voiture & Vélo</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8f9fa;
+    }
+    
+    #map {
+      width: 100%;
+      height: 450px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      margin-bottom: 15px;
+    }
+    
+    .controls {
+      padding: 15px;
+      background: white;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .btn:hover:not(:disabled) {
+      background: #0052a3;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,102,204,0.3);
+    }
+    
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .status {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    .status.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .result-card {
+      background: white;
+      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-left: 4px solid #ddd;
+      transition: transform 0.2s;
+    }
+    
+    .result-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .result-card.car { border-left-color: #e74c3c; }
+    .result-card.bike { border-left-color: #2ecc71; }
+    
+    .result-card h3 {
+      margin: 0 0 12px 0;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #555;
+    }
+    
+    .result-card .metric {
+      margin: 8px 0;
+    }
+    
+    .result-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #2c3e50;
+      line-height: 1;
+    }
+    
+    .result-card .label {
+      font-size: 12px;
+      color: #7f8c8d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+    
+    .result-card .secondary {
+      font-size: 14px;
+      color: #555;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+    
+    .legend {
+      background: white;
+      padding: 12px 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+    }
+    
+    .legend h4 {
+      margin: 0 0 10px 0;
+      font-size: 13px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0;
+      font-size: 13px;
+    }
+    
+    .legend-line {
+      width: 35px;
+      height: 4px;
+      border-radius: 2px;
+    }
+    
+    .info-box {
+      background: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 12px 15px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #2c3e50;
+      margin-top: 15px;
+    }
+    
+    .info-box strong {
+      color: #3498db;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button id="calculateBtn" class="btn">
+      <span>🗺️</span>
+      <span>Calculer les trajets</span>
+    </button>
+    <button id="saveBtn" class="btn" disabled>
+      <span>💾</span>
+      <span>Enregistrer dans Grist</span>
+    </button>
+    <span id="status" class="status" style="display: none;"></span>
+  </div>
+  
+  <div id="map"></div>
+  
+  <div class="legend">
+    <h4>Légende des trajets</h4>
+    <div class="legend-item">
+      <div class="legend-line" style="background: #e74c3c;"></div>
+      <span><strong>🚗 Voiture</strong> - Itinéraire le plus rapide</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-line" style="background: #2ecc71;"></div>
+      <span><strong>🚴 Vélo</strong> - Prend en compte le dénivelé</span>
+    </div>
+  </div>
+  
+  <div class="results" id="results" style="display: none;"></div>
+  
+  <div class="info-box">
+    <strong>💡 Note :</strong> Les calculs prennent en compte le relief pour le vélo. 
+    Les tracés GeoJSON sont enregistrés pour export SIG ultérieur.
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  
+  <script>
+    // ========== CONFIGURATION ==========
+    const CONFIG = {
+      ORS_API_KEY: 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijg0ZmJiY2UwMjU0YjRkYWFiNjU5ODA5OWUwNzU5MTY3IiwiaCI6Im11cm11cjY0In0='
+    };
+    
+    let map, currentRecord, routeLayers = {}, calculatedRoutes = {};
+    
+    // ========== INITIALISATION CARTE ==========
+    function initMap() {
+      map = L.map('map').setView([46.5, 2.5], 6);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+      }).addTo(map);
+      
+      routeLayers = {
+        car: L.layerGroup().addTo(map),
+        bike: L.layerGroup().addTo(map),
+        markers: L.layerGroup().addTo(map)
+      };
+    }
+    
+    // ========== GRIST API ==========
+    grist.ready({
+      requiredAccess: 'full',
+      columns: [
+        { name: 'Domicile_X_longitude_GPS', type: 'Numeric', optional: true },
+        { name: 'Domicile_Y_latitude_GPS', type: 'Numeric', optional: true },
+        { name: 'Travail_X_longitude_GPS', type: 'Numeric', optional: true },
+        { name: 'Travail_Y_latitude_GPS', type: 'Numeric', optional: true }
+      ]
+    });
+    
+    grist.onRecord(function(record) {
+      currentRecord = record;
+      updateMap(record);
+    });
+    
+    // ========== MISE À JOUR CARTE ==========
+    function updateMap(record) {
+      // Reset
+      Object.values(routeLayers).forEach(layer => layer.clearLayers());
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('saveBtn').disabled = true;
+      calculatedRoutes = {};
+      
+      const lonDom = record.Domicile_X_longitude_GPS;
+      const latDom = record.Domicile_Y_latitude_GPS;
+      const lonTrav = record.Travail_X_longitude_GPS;
+      const latTrav = record.Travail_Y_latitude_GPS;
+      
+      // Validation
+      if (!lonDom || !latDom || !lonTrav || !latTrav || 
+          lonDom === 0 || latDom === 0 || lonTrav === 0 || latTrav === 0) {
+        showStatus('⚠️ Coordonnées GPS manquantes ou nulles', 'warning');
+        return;
+      }
+      
+      // Validation géographique France métropolitaine
+      if (latDom < 41 || latDom > 51 || lonDom < -5 || lonDom > 10 ||
+          latTrav < 41 || latTrav > 51 || lonTrav < -5 || lonTrav > 10) {
+        showStatus('⚠️ Coordonnées hors de France métropolitaine', 'error');
+        return;
+      }
+      
+      // Marqueurs
+      const homeIcon = L.divIcon({
+        html: '<div style="font-size: 28px;">🏠</div>',
+        className: '',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30]
+      });
+      
+      const workIcon = L.divIcon({
+        html: '<div style="font-size: 28px;">💼</div>',
+        className: '',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30]
+      });
+      
+      L.marker([latDom, lonDom], { icon: homeIcon })
+        .bindPopup('<strong>🏠 Domicile</strong>')
+        .addTo(routeLayers.markers);
+      
+      L.marker([latTrav, lonTrav], { icon: workIcon })
+        .bindPopup('<strong>💼 Travail</strong>')
+        .addTo(routeLayers.markers);
+      
+      // Ligne directe (à vol d'oiseau)
+      L.polyline([[latDom, lonDom], [latTrav, lonTrav]], {
+        color: '#95a5a6',
+        weight: 2,
+        opacity: 0.4,
+        dashArray: '5, 10'
+      }).addTo(routeLayers.markers);
+      
+      // Calcul distance à vol d'oiseau
+      const distanceVol = calculateDistance(latDom, lonDom, latTrav, lonTrav);
+      
+      // Centrage
+      map.fitBounds([[latDom, lonDom], [latTrav, lonTrav]], { padding: [50, 50] });
+      
+      showStatus(`✓ Distance à vol d'oiseau : ${distanceVol.toFixed(1)} km`, 'info');
+    }
+    
+    // ========== CALCUL TRAJETS ==========
+    document.getElementById('calculateBtn').addEventListener('click', async function() {
+      if (!currentRecord) {
+        showStatus('❌ Aucun enregistrement sélectionné', 'error');
+        return;
+      }
+      
+      const lonDom = currentRecord.Domicile_X_longitude_GPS;
+      const latDom = currentRecord.Domicile_Y_latitude_GPS;
+      const lonTrav = currentRecord.Travail_X_longitude_GPS;
+      const latTrav = currentRecord.Travail_Y_latitude_GPS;
+      
+      if (!lonDom || !latDom || !lonTrav || !latTrav) {
+        showStatus('❌ Coordonnées GPS manquantes', 'error');
+        return;
+      }
+      
+      this.disabled = true;
+      showStatus('🔄 Calcul en cours...', 'info');
+      
+      try {
+        // Voiture
+        showStatus('🔄 Calcul trajet voiture...', 'info');
+        const carRoute = await calculateRoute(
+          lonDom, latDom, lonTrav, latTrav, 
+          'driving-car', 
+          CONFIG.ORS_API_KEY
+        );
+        
+        if (carRoute) {
+          displayRoute(carRoute.geometry, '#e74c3c', 'car', 5);
+          calculatedRoutes.car = {
+            distance_km: (carRoute.distance / 1000).toFixed(2),
+            duree_min: Math.round(carRoute.duration / 60),
+            geojson: JSON.stringify(carRoute.geometry)
+          };
+        }
+        
+        // Vélo (avec élévation)
+        showStatus('🔄 Calcul trajet vélo (avec dénivelé)...', 'info');
+        const bikeRoute = await calculateRoute(
+          lonDom, latDom, lonTrav, latTrav, 
+          'cycling-regular', 
+          CONFIG.ORS_API_KEY,
+          true  // Prend en compte l'altitude
+        );
+        
+        if (bikeRoute) {
+          displayRoute(bikeRoute.geometry, '#2ecc71', 'bike', 4);
+          calculatedRoutes.bike = {
+            distance_km: (bikeRoute.distance / 1000).toFixed(2),
+            duree_min: Math.round(bikeRoute.duration / 60),
+            ascent: bikeRoute.ascent ? Math.round(bikeRoute.ascent) : null,
+            descent: bikeRoute.descent ? Math.round(bikeRoute.descent) : null,
+            geojson: JSON.stringify(bikeRoute.geometry)
+          };
+        }
+        
+        displayResults();
+        showStatus('✅ Trajets calculés avec succès', 'success');
+        document.getElementById('saveBtn').disabled = false;
+        
+      } catch (error) {
+        console.error('Erreur:', error);
+        showStatus('❌ Erreur: ' + error.message, 'error');
+      } finally {
+        this.disabled = false;
+      }
+    });
+    
+    // ========== SAUVEGARDE GRIST ==========
+    document.getElementById('saveBtn').addEventListener('click', async function() {
+      if (!calculatedRoutes || Object.keys(calculatedRoutes).length === 0) {
+        showStatus('❌ Aucun trajet à enregistrer', 'error');
+        return;
+      }
+      
+      this.disabled = true;
+      showStatus('💾 Enregistrement...', 'info');
+      
+      try {
+        const updates = {};
+        
+        if (calculatedRoutes.car) {
+          updates.distance_voiture_km = parseFloat(calculatedRoutes.car.distance_km);
+          updates.duree_voiture_min = calculatedRoutes.car.duree_min;
+          updates.geojson_voiture = calculatedRoutes.car.geojson;
+        }
+        
+        if (calculatedRoutes.bike) {
+          updates.distance_velo_km = parseFloat(calculatedRoutes.bike.distance_km);
+          updates.duree_velo_min = calculatedRoutes.bike.duree_min;
+          updates.geojson_velo = calculatedRoutes.bike.geojson;
+          
+          if (calculatedRoutes.bike.ascent !== null) {
+            updates.denivele_positif_velo_m = calculatedRoutes.bike.ascent;
+            updates.denivele_negatif_velo_m = calculatedRoutes.bike.descent;
+          }
+        }
+        
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', grist.getTable(), currentRecord.id, updates]
+        ]);
+        
+        showStatus('✅ Enregistré dans Grist !', 'success');
+        
+      } catch (error) {
+        console.error('Erreur sauvegarde:', error);
+        showStatus('❌ Erreur d\'enregistrement: ' + error.message, 'error');
+      } finally {
+        this.disabled = false;
+      }
+    });
+    
+    // ========== CALCUL ROUTE ORS ==========
+    async function calculateRoute(lonStart, latStart, lonEnd, latEnd, profile, apiKey, elevation = false) {
+      const url = `https://api.openrouteservice.org/v2/directions/${profile}/geojson`;
+      
+      const body = {
+        coordinates: [[lonStart, latStart], [lonEnd, latEnd]],
+        elevation: elevation,
+        extra_info: elevation ? ['steepness'] : []
+      };
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, application/geo+json'
+        },
+        body: JSON.stringify(body)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ORS ${profile}: ${response.status} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.features || data.features.length === 0) {
+        throw new Error(`Pas de route trouvée pour ${profile}`);
+      }
+      
+      const route = data.features[0];
+      const props = route.properties.summary || route.properties.segments[0];
+      
+      return {
+        geometry: route.geometry,
+        distance: props.distance,
+        duration: props.duration,
+        ascent: route.properties.ascent,
+        descent: route.properties.descent
+      };
+    }
+    
+    // ========== AFFICHAGE ROUTE ==========
+    function displayRoute(geometry, color, layerKey, weight = 5) {
+      const coords = geometry.coordinates.map(c => [c[1], c[0]]);
+      
+      L.polyline(coords, {
+        color: color,
+        weight: weight,
+        opacity: 0.8,
+        lineJoin: 'round',
+        lineCap: 'round'
+      }).addTo(routeLayers[layerKey]);
+    }
+    
+    // ========== AFFICHAGE RÉSULTATS ==========
+    function displayResults() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+      
+      if (calculatedRoutes.car) {
+        const vitesseMoy = (parseFloat(calculatedRoutes.car.distance_km) / (calculatedRoutes.car.duree_min / 60)).toFixed(0);
+        
+        resultsDiv.innerHTML += `
+          <div class="result-card car">
+            <h3>🚗 Voiture</h3>
+            <div class="metric">
+              <div class="value">${calculatedRoutes.car.distance_km} km</div>
+              <div class="label">Distance</div>
+            </div>
+            <div class="secondary">
+              ⏱️ <strong>${calculatedRoutes.car.duree_min} min</strong> • 
+              📊 ${vitesseMoy} km/h
+            </div>
+          </div>
+        `;
+      }
+      
+      if (calculatedRoutes.bike) {
+        const vitesseMoy = (parseFloat(calculatedRoutes.bike.distance_km) / (calculatedRoutes.bike.duree_min / 60)).toFixed(0);
+        
+        let denicontent = '';
+        if (calculatedRoutes.bike.ascent !== null) {
+          denicontent = `⛰️ D+ ${calculatedRoutes.bike.ascent}m • D- ${calculatedRoutes.bike.descent}m`;
+        }
+        
+        resultsDiv.innerHTML += `
+          <div class="result-card bike">
+            <h3>🚴 Vélo</h3>
+            <div class="metric">
+              <div class="value">${calculatedRoutes.bike.distance_km} km</div>
+              <div class="label">Distance</div>
+            </div>
+            <div class="secondary">
+              ⏱️ <strong>${calculatedRoutes.bike.duree_min} min</strong> • 
+              📊 ${vitesseMoy} km/h
+              ${denicontent ? '<br>' + denicontent : ''}
+            </div>
+          </div>
+        `;
+      }
+      
+      resultsDiv.style.display = 'grid';
+    }
+    
+    // ========== UTILITAIRES ==========
+    function showStatus(message, type) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = 'status ' + type;
+      status.display = 'inline-block';
+    }
+    
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Rayon de la Terre en km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+    
+    // Init
+    initMap();
+  </script>
+</body>
+</html>
+```
+
+## Étape 2 : Héberger le fichier HTML
+
+### Option A : GitHub Pages (RECOMMANDÉ - Gratuit et simple)
+
+1. **Crée un repo GitHub** :
+   - Va sur https://github.com/new
+   - Nom du repo : `diagmob-widget`
+   - Public
+   - Clic "Create repository"
+
+2. **Upload le fichier** :
+   - Clic sur "uploading an existing file"
+   - Glisse-déposer ton fichier `diagmob-routing.html`
+   - Commit
+
+3. **Active GitHub Pages** :
+   - Settings → Pages
+   - Source : "Deploy from a branch"
+   - Branch : `main` → `/ (root)`
+   - Save
+
+4. **Ton URL sera** :
+```
+   https://TON_USERNAME.github.io/diagmob-widget/diagmob-routing.html
+```
+
+### Option B : Serveur ministériel
+
+Si tu as accès à un serveur web au ministère, upload simplement le fichier HTML.
+
+## Étape 3 : Créer les colonnes dans Grist
+
+Avant d'intégrer le widget, ajoute ces colonnes dans ta table `DiagMob test V1` :
+```
+distance_voiture_km      → Type: Numeric, Format: 0.00
+duree_voiture_min        → Type: Integer
+geojson_voiture          → Type: Text
+
+distance_velo_km         → Type: Numeric, Format: 0.00
+duree_velo_min           → Type: Integer
+denivele_positif_velo_m  → Type: Integer
+denivele_negatif_velo_m  → Type: Integer
+geojson_velo             → Type: Text
