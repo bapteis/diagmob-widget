@@ -245,8 +245,8 @@
     grist.ready({
       requiredAccess: 'full',
       columns: [
-        { name: 'Domicile_X_longitude_GPS', type: 'Numeric', optional: true },
-        { name: 'Domicile_Y_latitude_GPS', type: 'Numeric', optional: true },
+        { name: 'Domicile_X_longitude_GPS2', type: 'Numeric', optional: true },
+        { name: 'Domicile_Y_latitude_GPS2', type: 'Numeric', optional: true },
         { name: 'Travail_X_longitude_GPS', type: 'Numeric', optional: true },
         { name: 'Travail_Y_latitude_GPS', type: 'Numeric', optional: true }
       ]
@@ -254,6 +254,7 @@
     
     grist.onRecord(function(record) {
       currentRecord = record;
+      console.log('Record reçu:', record);
       updateMap(record);
     });
     
@@ -265,10 +266,12 @@
       document.getElementById('saveBtn').disabled = true;
       calculatedRoutes = {};
       
-      const lonDom = record.Domicile_X_longitude_GPS;
-      const latDom = record.Domicile_Y_latitude_GPS;
+      const lonDom = record.Domicile_X_longitude_GPS2;
+      const latDom = record.Domicile_Y_latitude_GPS2;
       const lonTrav = record.Travail_X_longitude_GPS;
       const latTrav = record.Travail_Y_latitude_GPS;
+      
+      console.log('Coordonnées:', { lonDom, latDom, lonTrav, latTrav });
       
       // Validation
       if (!lonDom || !latDom || !lonTrav || !latTrav || 
@@ -331,8 +334,8 @@
         return;
       }
       
-      const lonDom = currentRecord.Domicile_X_longitude_GPS;
-      const latDom = currentRecord.Domicile_Y_latitude_GPS;
+      const lonDom = currentRecord.Domicile_X_longitude_GPS2;
+      const latDom = currentRecord.Domicile_Y_latitude_GPS2;
       const lonTrav = currentRecord.Travail_X_longitude_GPS;
       const latTrav = currentRecord.Travail_Y_latitude_GPS;
       
@@ -424,6 +427,8 @@
           }
         }
         
+        console.log('Mise à jour Grist:', updates);
+        
         await grist.docApi.applyUserActions([
           ['UpdateRecord', grist.getTable(), currentRecord.id, updates]
         ]);
@@ -448,6 +453,8 @@
         extra_info: elevation ? ['steepness'] : []
       };
       
+      console.log('Appel ORS:', { url, profile, body });
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -460,10 +467,12 @@
       
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Erreur ORS:', errorText);
         throw new Error(`ORS ${profile}: ${response.status} - ${errorText}`);
       }
       
       const data = await response.json();
+      console.log('Réponse ORS:', data);
       
       if (!data.features || data.features.length === 0) {
         throw new Error(`Pas de route trouvée pour ${profile}`);
@@ -549,7 +558,7 @@
       const status = document.getElementById('status');
       status.textContent = message;
       status.className = 'status ' + type;
-      status.display = 'inline-block';
+      status.style.display = 'inline-block';
     }
     
     function calculateDistance(lat1, lon1, lat2, lon2) {
