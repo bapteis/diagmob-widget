@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; padding: 20px; max-width: 640px; margin: auto; background-color: #f9f9f9; color: #333; }
+    .intro { font-size: 0.9em; color: #666; margin-bottom: 20px; background: white; padding: 15px; border-left: 4px solid #007bff; border-radius: 4px; }
+    .section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .section-title { font-weight: bold; margin-bottom: 15px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.95em; }
+    input[type="text"], input[type="email"], select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+    .checkbox-item { display: flex; align-items: center; gap: 10px; font-weight: normal; }
+    .checkbox-item input { margin: 0; }
+    .input-wrapper { position: relative; }
+    .suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; z-index: 100; max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 0 0 4px 4px; }
+    .suggestions div { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+    .suggestions div:hover { background-color: #f0f8ff; }
+    #trajet-info { display: none; margin-top: 10px; padding: 10px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 0.9em; }
+    button { background-color: #007bff; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; width: 100%; transition: background 0.2s; }
+    button:hover { background-color: #0056b3; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
+    .error { color: #dc3545; font-size: 0.9em; margin-top: 5px; display: none; }
+    .debug { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 12px; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+  <div class="intro">
+    <strong>Diag Mob - Expérimentation</strong><br>
+    Vos réponses sont confidentielles et traitées selon le RGPD.
+  </div>
+
+  <div class="section">
+    <div class="section-title">1. Vos informations</div>
+    <label class="checkbox-item">
+      <input type="checkbox" id="rgpd"> 
+      <span>J'accepte le traitement de mes données (RGPD) *</span>
+    </label><br>
+    <label>Adresse mail professionnelle *</label>
+    <input type="email" id="email" placeholder="prenom.nom@ministere.gouv.fr">
+    <div class="error" id="error-email">Veuillez saisir un email valide</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">2. Vos trajets</div>
+    
+    <label>Adresse de domicile *</label>
+    <div class="input-wrapper">
+      <input type="text" id="input-dom" placeholder="Tapez votre adresse..." autocomplete="off">
+      <div id="sugg-dom" class="suggestions"></div>
+    </div>
+    <div class="error" id="error-dom">Veuillez sélectionner une adresse dans la liste</div>
+
+    <label>Adresse de travail *</label>
+    <div class="input-wrapper">
+      <input type="text" id="input-trav" placeholder="Tapez votre adresse..." autocomplete="off">
+      <div id="sugg-trav" class="suggestions"></div>
+    </div>
+    <div class="error" id="error-trav">Veuillez sélectionner une adresse dans la liste</div>
+    
+    <div id="trajet-info"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">3. Habitudes de mobilité</div>
+
+    <label>Mode de transport principal *</label>
+    <select id="transport">
+      <option value="">-- Choisir --</option>
+      <option value="Voiture (seul)">Voiture (sans passagers)</option>
+      <option value="Covoiturage">Covoiturage</option>
+      <option value="Transport en commun">Transports en communs</option>
+      <option value="Velo">Vélo musculaire</option>
+      <option value="Velo Elec">Vélo électrique</option>
+      <option value="Marche">Marche à pied</option>
+      <option value="Intermodalite">Intermodalité</option>
+    </select>
+
+    <label>Handicap mobilité ?</label>
+    <select id="handicap">
+      <option value="Non">Non</option>
+      <option value="Oui">Oui</option>
+    </select>
+
+    <label>Jours sur site / semaine</label>
+    <select id="jours-site">
+      <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+      <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+    </select>
+
+    <label>Jours de présence</label>
+    <div class="checkbox-group">
+      <label class="checkbox-item"><input type="checkbox" name="jour" value="Lundi"> Lundi</label>
+      <label class="checkbox-item"><input type="checkbox" name="jour" value="Mardi"> Mardi</label>
+      <label class="checkbox-item"><input type="checkbox" name="jour" value="Mercredi"> Mercredi</label>
+      <label class="checkbox-item"><input type="checkbox" name="jour" value="Jeudi"> Jeudi</label>
+      <label class="checkbox-item"><input type="checkbox" name="jour" value="Vendredi"> Vendredi</label>
+    </div>
+
+    <label>Heure d'arrivée</label>
+    <select id="heure-arrivee">
+      <option value="">-- Choisir --</option>
+      <option value="Avant 7h30">Avant 7h30</option>
+      <option value="7h30-8h30">7h30-8h30</option>
+      <option value="8h30-9h30">8h30-9h30</option>
+      <option value="Apres 9h30">Après 9h30</option>
+    </select>
+
+    <label>Heure de départ</label>
+    <select id="heure-depart">
+      <option value="">-- Choisir --</option>
+      <option value="Avant 16h30">Avant 16h30</option>
+      <option value="16h30-17h30">16h30-17h30</option>
+      <option value="17h30-18h30">17h30-18h30</option>
+      <option value="Apres 18h30">Après 18h30</option>
+    </select>
+  </div>
+
+  <button id="btn-envoyer" onclick="envoyerReponse()">Envoyer ma réponse</button>
+  
+  <!-- Debug info (à supprimer en prod) -->
+  <div class="debug" id="debug" style="display:none;"></div>
+
+  <script>
+    // POUR CUSTOM WIDGET BUILDER : Utilisation de grist.docApi directement
+    let tableId = null;
+    let docApi = null;
+    
+    grist.ready({
+      requiredAccess: 'full',
+      columns: [
+        'Adresse_Domicile',
+        'Adresse_Travail',
+        'GPS_Dom_Lat',
+        'GPS_Dom_Lon',
+        'GPS_Trav_Lat',
+        'GPS_Trav_Lon',
+        'Distance_km',
+        'Temps_Voiture_min',
+        'Temps_Velo_min',
+        'Email_Pro',
+        'Consentement_RGPD',
+        'Mode_Transport',
+        'Handicap',
+        'Jours_Site_Moyenne',
+        'Jours_Presence',
+        'Heure_Arrivee',
+        'Heure_Depart'
+      ]
+    });
+
+    // Récupérer les infos de la table via onOptions
+    grist.onOptions(async function(options, settings) {
+      console.log('📊 Options widget:', options);
+      docApi = grist.docApi;
+      
+      // Le Custom Widget Builder utilise grist.getTable() différemment
+      try {
+        const tableInfo = await grist.getTable();
+        if (tableInfo && tableInfo.id) {
+          tableId = tableInfo.id;
+        } else if (tableInfo && typeof tableInfo === 'string') {
+          tableId = tableInfo;
+        }
+        console.log('✅ Table ID:', tableId);
+      } catch(e) {
+        console.error('Erreur getTable:', e);
+        // Fallback : essayer de récupérer depuis le widget settings
+        if (settings && settings.tableId) {
+          tableId = settings.tableId;
+          console.log('✅ Table ID (fallback):', tableId);
+        }
+      }
+    });
+
+    let gpsData = {
+      dom: { addr: '', lat: null, lon: null },
+      trav: { addr: '', lat: null, lon: null },
+      route: { dist: 0, car: 0, bike: 0 }
+    };
+
+    // Autocomplétion BAN
+    function setupAutocomplete(inputId, listId, type) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById(listId);
+      const errorDiv = document.getElementById('error-' + type);
+      let timeout;
+      
+      input.addEventListener('input', () => {
+        clearTimeout(timeout);
+        const q = input.value.trim();
+        
+        if (gpsData[type].addr && input.value !== gpsData[type].addr) {
+          gpsData[type] = { addr: '', lat: null, lon: null };
+          if (errorDiv) errorDiv.style.display = 'none';
+        }
+        
+        if (q.length < 3) { 
+          list.style.display = 'none'; 
+          return; 
+        }
+        
+        timeout = setTimeout(async () => {
+          try {
+            const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5`);
+            const d = await r.json();
+            list.innerHTML = '';
+            
+            if (d.features?.length) {
+              list.style.display = 'block';
+              d.features.forEach(f => {
+                const div = document.createElement('div');
+                const score = (f.properties.score * 100).toFixed(0);
+                div.innerHTML = `
+                  <strong>${f.properties.label}</strong><br>
+                  <small style="color: #666;">Confiance: ${score}%</small>
+                `;
+                div.onclick = () => {
+                  input.value = f.properties.label;
+                  gpsData[type].addr = f.properties.label;
+                  gpsData[type].lon = f.geometry.coordinates[0];
+                  gpsData[type].lat = f.geometry.coordinates[1];
+                  list.style.display = 'none';
+                  if (errorDiv) errorDiv.style.display = 'none';
+                  calcRoute();
+                };
+                list.appendChild(div);
+              });
+            } else {
+              list.innerHTML = '<div style="color: #999;">Aucune adresse trouvée</div>';
+              list.style.display = 'block';
+            }
+          } catch(e) {
+            console.error('Erreur autocomplétion:', e);
+          }
+        }, 300);
+      });
+      
+      document.addEventListener('click', e => { 
+        if(e.target !== input && !list.contains(e.target)) {
+          list.style.display='none'; 
+        }
+      });
+    }
+    
+    setupAutocomplete('input-dom', 'sugg-dom', 'dom');
+    setupAutocomplete('input-trav', 'sugg-trav', 'trav');
+
+    // Calcul itinéraire
+    async function calcRoute() {
+      if(!gpsData.dom.lat || !gpsData.trav.lat) return;
+      
+      const p1 = `${gpsData.dom.lon},${gpsData.dom.lat}`;
+      const p2 = `${gpsData.trav.lon},${gpsData.trav.lat}`;
+      const infoDiv = document.getElementById('trajet-info');
+      
+      try {
+        const rCar = await fetch(`https://router.project-osrm.org/route/v1/driving/${p1};${p2}?overview=false`);
+        const jCar = await rCar.json();
+        if(jCar.routes?.[0]) {
+          gpsData.route.dist = (jCar.routes[0].distance / 1000).toFixed(2);
+          gpsData.route.car = Math.round(jCar.routes[0].duration / 60);
+        }
+        
+        const rBike = await fetch(`https://router.project-osrm.org/route/v1/cycling/${p1};${p2}?overview=false`);
+        const jBike = await rBike.json();
+        if(jBike.routes?.[0]) {
+          gpsData.route.bike = Math.round(jBike.routes[0].duration / 60);
+        }
+        
+        infoDiv.style.display = 'block';
+        infoDiv.innerHTML = `
+          ✅ <strong>Trajet calculé :</strong> ${gpsData.route.dist} km<br>
+          🚗 Voiture : env. ${gpsData.route.car} min | 🚴 Vélo : env. ${gpsData.route.bike} min
+        `;
+      } catch(e) {
+        console.error('Erreur calcul trajet:', e);
+      }
+    }
+
+    // ENVOI avec docApi.applyUserActions
+    async function envoyerReponse() {
+      const btn = document.getElementById('btn-envoyer');
+      const debugDiv = document.getElementById('debug');
+      
+      // Validation
+      let hasError = false;
+      
+      if(!document.getElementById('rgpd').checked) { 
+        alert("⚠️ Merci d'accepter le consentement RGPD."); 
+        return; 
+      }
+      
+      const email = document.getElementById('email').value;
+      if(!email || !email.includes('@')) { 
+        document.getElementById('error-email').style.display = 'block';
+        hasError = true;
+      } else {
+        document.getElementById('error-email').style.display = 'none';
+      }
+      
+      if(!gpsData.dom.lat) { 
+        document.getElementById('error-dom').style.display = 'block';
+        hasError = true;
+      } else {
+        document.getElementById('error-dom').style.display = 'none';
+      }
+      
+      if(!gpsData.trav.lat) { 
+        document.getElementById('error-trav').style.display = 'block';
+        hasError = true;
+      } else {
+        document.getElementById('error-trav').style.display = 'none';
+      }
+      
+      if(hasError) {
+        alert("⚠️ Veuillez corriger les erreurs avant d'envoyer.");
+        return;
+      }
+
+      const joursCoches = Array.from(document.querySelectorAll('input[name="jour"]:checked'))
+        .map(cb => cb.value)
+        .join(', ');
+
+      btn.disabled = true; 
+      btn.innerText = "⏳ Envoi en cours...";
+
+      try {
+        // Vérification docApi
+        if (!grist.docApi) {
+          throw new Error("grist.docApi n'est pas disponible");
+        }
+
+        // Construction de l'enregistrement
+        const record = {
+          Adresse_Domicile: gpsData.dom.addr,
+          Adresse_Travail: gpsData.trav.addr,
+          GPS_Dom_Lat: gpsData.dom.lat,
+          GPS_Dom_Lon: gpsData.dom.lon,
+          GPS_Trav_Lat: gpsData.trav.lat,
+          GPS_Trav_Lon: gpsData.trav.lon,
+          Distance_km: parseFloat(gpsData.route.dist) || 0,
+          Temps_Voiture_min: gpsData.route.car || 0,
+          Temps_Velo_min: gpsData.route.bike || 0,
+          Email_Pro: email,
+          Consentement_RGPD: "Oui",
+          Mode_Transport: document.getElementById('transport').value || "",
+          Handicap: document.getElementById('handicap').value || "Non",
+          Jours_Site_Moyenne: parseInt(document.getElementById('jours-site').value) || 0,
+          Jours_Presence: joursCoches,
+          Heure_Arrivee: document.getElementById('heure-arrivee').value || "",
+          Heure_Depart: document.getElementById('heure-depart').value || ""
+        };
+
+        console.log('📤 Données à envoyer:', record);
+        debugDiv.style.display = 'block';
+        debugDiv.innerHTML = 'Envoi en cours...';
+
+        // MÉTHODE POUR CUSTOM WIDGET BUILDER : applyUserActions avec AddRecord
+        // Note: on n'a pas besoin de tableId, Grist le déduit du contexte du widget
+        
+        await grist.docApi.applyUserActions([
+          ['AddRecord', null, null, record]
+        ]);
+        
+        console.log('✅ Enregistrement créé');
+        
+        debugDiv.innerHTML = '✅ Envoyé avec succès !';
+        
+        // Message de succès
+        document.body.innerHTML = `
+          <div style="text-align:center; padding:50px; color:#28a745; background:white; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); max-width:500px; margin:50px auto;">
+            <div style="font-size:64px; margin-bottom:20px;">✅</div>
+            <h2 style="color:#28a745; margin:0 0 10px 0;">Merci !</h2>
+            <p style="color:#666; font-size:16px; margin:0;">
+              Votre réponse a été enregistrée avec succès.<br>
+              Vous pouvez fermer cette fenêtre.
+            </p>
+          </div>
+        `;
+
+      } catch (e) {
+        console.error('❌ Erreur:', e);
+        debugDiv.style.display = 'block';
+        debugDiv.innerHTML = `❌ Erreur: ${e.message}`;
+        alert("❌ Erreur : " + e.message);
+        btn.disabled = false;
+        btn.innerText = "Réessayer";
+      }
+    }
+  </script>
+</body>
+</html>
