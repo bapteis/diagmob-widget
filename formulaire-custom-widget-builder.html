@@ -20,10 +20,9 @@
     .suggestions div:hover { background-color: #f0f8ff; }
     #trajet-info { display: none; margin-top: 10px; padding: 10px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 0.9em; }
     button { background-color: #007bff; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; width: 100%; transition: background 0.2s; }
-    button:hover { background-color: #0056b3; }
+    button:hover:not(:disabled) { background-color: #0056b3; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
     .error { color: #dc3545; font-size: 0.9em; margin-top: 5px; display: none; }
-    .debug { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 12px; font-family: monospace; }
   </style>
 </head>
 <body>
@@ -120,60 +119,47 @@
   </div>
 
   <button id="btn-envoyer" onclick="envoyerReponse()">Envoyer ma réponse</button>
-  
-  <!-- Debug info (à supprimer en prod) -->
-  <div class="debug" id="debug" style="display:none;"></div>
 
   <script>
-    // POUR CUSTOM WIDGET BUILDER : Utilisation de grist.docApi directement
-    let tableId = null;
-    let docApi = null;
+    // MÊME STRUCTURE QUE LE WIDGET DE TRAJETS QUI FONCTIONNE
+    let selectedTable = null;
+    let currentRecord = null;
     
     grist.ready({
       requiredAccess: 'full',
       columns: [
-        'Adresse_Domicile',
-        'Adresse_Travail',
-        'GPS_Dom_Lat',
-        'GPS_Dom_Lon',
-        'GPS_Trav_Lat',
-        'GPS_Trav_Lon',
-        'Distance_km',
-        'Temps_Voiture_min',
-        'Temps_Velo_min',
-        'Email_Pro',
-        'Consentement_RGPD',
-        'Mode_Transport',
-        'Handicap',
-        'Jours_Site_Moyenne',
-        'Jours_Presence',
-        'Heure_Arrivee',
-        'Heure_Depart'
+        { name: 'Adresse_Domicile', optional: true },
+        { name: 'Adresse_Travail', optional: true },
+        { name: 'GPS_Dom_Lat', optional: true },
+        { name: 'GPS_Dom_Lon', optional: true },
+        { name: 'GPS_Trav_Lat', optional: true },
+        { name: 'GPS_Trav_Lon', optional: true },
+        { name: 'Distance_km', optional: true },
+        { name: 'Temps_Voiture_min', optional: true },
+        { name: 'Temps_Velo_min', optional: true },
+        { name: 'Email_Pro', optional: true },
+        { name: 'Consentement_RGPD', optional: true },
+        { name: 'Mode_Transport', optional: true },
+        { name: 'Handicap', optional: true },
+        { name: 'Jours_Site_Moyenne', optional: true },
+        { name: 'Jours_Presence', optional: true },
+        { name: 'Heure_Arrivee', optional: true },
+        { name: 'Heure_Depart', optional: true }
       ]
     });
 
-    // Récupérer les infos de la table via onOptions
-    grist.onOptions(async function(options, settings) {
-      console.log('📊 Options widget:', options);
-      docApi = grist.docApi;
-      
-      // Le Custom Widget Builder utilise grist.getTable() différemment
+    // COMME LE WIDGET DE TRAJETS : récupère la table via onRecords
+    grist.onRecords(async function(records, mappings) {
       try {
-        const tableInfo = await grist.getTable();
-        if (tableInfo && tableInfo.id) {
-          tableId = tableInfo.id;
-        } else if (tableInfo && typeof tableInfo === 'string') {
-          tableId = tableInfo;
-        }
-        console.log('✅ Table ID:', tableId);
+        selectedTable = await grist.getTable();
+        console.log('✅ Table initialisée');
       } catch(e) {
-        console.error('Erreur getTable:', e);
-        // Fallback : essayer de récupérer depuis le widget settings
-        if (settings && settings.tableId) {
-          tableId = settings.tableId;
-          console.log('✅ Table ID (fallback):', tableId);
-        }
+        console.error('❌ Erreur initialisation table:', e);
       }
+    });
+
+    grist.onRecord(function(record) {
+      currentRecord = record;
     });
 
     let gpsData = {
@@ -281,10 +267,9 @@
       }
     }
 
-    // ENVOI avec docApi.applyUserActions
+    // ENVOI - INSPIRÉ DU WIDGET DE TRAJETS
     async function envoyerReponse() {
       const btn = document.getElementById('btn-envoyer');
-      const debugDiv = document.getElementById('debug');
       
       // Validation
       let hasError = false;
@@ -321,6 +306,12 @@
         return;
       }
 
+      // Vérification selectedTable (comme le widget de trajets)
+      if (!selectedTable) {
+        alert("❌ Table non initialisée. Veuillez rafraîchir la page.");
+        return;
+      }
+
       const joursCoches = Array.from(document.querySelectorAll('input[name="jour"]:checked'))
         .map(cb => cb.value)
         .join(', ');
@@ -329,46 +320,73 @@
       btn.innerText = "⏳ Envoi en cours...";
 
       try {
-        // Vérification docApi
-        if (!grist.docApi) {
-          throw new Error("grist.docApi n'est pas disponible");
+        // CONSTRUCTION DES CHAMPS - COMME LE WIDGET DE TRAJETS
+        // IMPORTANT : Ne pas inclure de valeurs null/undefined/vides qui causent l'erreur startsWith
+        const fields = {};
+        
+        // Adresses (toujours présentes car validées)
+        fields.Adresse_Domicile = gpsData.dom.addr;
+        fields.Adresse_Travail = gpsData.trav.addr;
+        fields.GPS_Dom_Lat = gpsData.dom.lat;
+        fields.GPS_Dom_Lon = gpsData.dom.lon;
+        fields.GPS_Trav_Lat = gpsData.trav.lat;
+        fields.GPS_Trav_Lon = gpsData.trav.lon;
+        
+        // Trajets
+        if (gpsData.route.dist > 0) {
+          fields.Distance_km = parseFloat(gpsData.route.dist);
+        }
+        if (gpsData.route.car > 0) {
+          fields.Temps_Voiture_min = gpsData.route.car;
+        }
+        if (gpsData.route.bike > 0) {
+          fields.Temps_Velo_min = gpsData.route.bike;
+        }
+        
+        // Email et RGPD
+        fields.Email_Pro = email;
+        fields.Consentement_RGPD = "Oui";
+        
+        // Mode transport (si renseigné)
+        const transport = document.getElementById('transport').value;
+        if (transport) {
+          fields.Mode_Transport = transport;
+        }
+        
+        // Handicap
+        fields.Handicap = document.getElementById('handicap').value;
+        
+        // Jours site
+        const joursSite = parseInt(document.getElementById('jours-site').value);
+        if (joursSite > 0) {
+          fields.Jours_Site_Moyenne = joursSite;
+        }
+        
+        // Jours présence (si cochés)
+        if (joursCoches) {
+          fields.Jours_Presence = joursCoches;
+        }
+        
+        // Heures (si renseignées)
+        const heureArrivee = document.getElementById('heure-arrivee').value;
+        if (heureArrivee) {
+          fields.Heure_Arrivee = heureArrivee;
+        }
+        
+        const heureDepart = document.getElementById('heure-depart').value;
+        if (heureDepart) {
+          fields.Heure_Depart = heureDepart;
         }
 
-        // Construction de l'enregistrement
-        const record = {
-          Adresse_Domicile: gpsData.dom.addr,
-          Adresse_Travail: gpsData.trav.addr,
-          GPS_Dom_Lat: gpsData.dom.lat,
-          GPS_Dom_Lon: gpsData.dom.lon,
-          GPS_Trav_Lat: gpsData.trav.lat,
-          GPS_Trav_Lon: gpsData.trav.lon,
-          Distance_km: parseFloat(gpsData.route.dist) || 0,
-          Temps_Voiture_min: gpsData.route.car || 0,
-          Temps_Velo_min: gpsData.route.bike || 0,
-          Email_Pro: email,
-          Consentement_RGPD: "Oui",
-          Mode_Transport: document.getElementById('transport').value || "",
-          Handicap: document.getElementById('handicap').value || "Non",
-          Jours_Site_Moyenne: parseInt(document.getElementById('jours-site').value) || 0,
-          Jours_Presence: joursCoches,
-          Heure_Arrivee: document.getElementById('heure-arrivee').value || "",
-          Heure_Depart: document.getElementById('heure-depart').value || ""
-        };
+        console.log('📤 Création enregistrement:', fields);
 
-        console.log('📤 Données à envoyer:', record);
-        debugDiv.style.display = 'block';
-        debugDiv.innerHTML = 'Envoi en cours...';
-
-        // MÉTHODE POUR CUSTOM WIDGET BUILDER : applyUserActions avec AddRecord
-        // Note: on n'a pas besoin de tableId, Grist le déduit du contexte du widget
+        // MÉTHODE EXACTEMENT COMME LE WIDGET DE TRAJETS
+        // Mais avec create() au lieu de update()
+        await selectedTable.create({
+          fields: fields
+        });
         
-        await grist.docApi.applyUserActions([
-          ['AddRecord', null, null, record]
-        ]);
-        
-        console.log('✅ Enregistrement créé');
-        
-        debugDiv.innerHTML = '✅ Envoyé avec succès !';
+        console.log('✅ Enregistrement créé avec succès');
         
         // Message de succès
         document.body.innerHTML = `
@@ -384,9 +402,7 @@
 
       } catch (e) {
         console.error('❌ Erreur:', e);
-        debugDiv.style.display = 'block';
-        debugDiv.innerHTML = `❌ Erreur: ${e.message}`;
-        alert("❌ Erreur : " + e.message);
+        alert("❌ Erreur : " + e.message + "\n\nAssurez-vous que le widget a 'Full document access'.");
         btn.disabled = false;
         btn.innerText = "Réessayer";
       }
