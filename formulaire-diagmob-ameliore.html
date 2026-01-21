@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; padding: 20px; max-width: 680px; margin: auto; background-color: #f9f9fa; color: #333; }
+    .intro { font-size: 0.9em; color: #666; margin-bottom: 20px; background: white; padding: 15px; border-left: 4px solid #007bff; border-radius: 4px; }
+    .section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .section-title { font-weight: bold; margin-bottom: 15px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 1.1em; }
+    
+    label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.95em; }
+    label.required::after { content: " *"; color: #dc3545; }
+    
+    input[type="text"], input[type="email"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    
+    /* Radio buttons et checkboxes */
+    .radio-group, .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+    .radio-item, .checkbox-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .radio-item:hover, .checkbox-item:hover { background: #e9ecef; }
+    .radio-item input[type="radio"], .checkbox-item input[type="checkbox"] { margin: 0; width: 18px; height: 18px; cursor: pointer; }
+    .radio-item label, .checkbox-item label { margin: 0; font-weight: normal; cursor: pointer; flex: 1; }
+    
+    /* Question conditionnelle */
+    .conditional-question { margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; display: none; }
+    .conditional-question.show { display: block; }
+    .conditional-question .section-title { font-size: 1em; color: #856404; border-bottom: 1px solid #ffc107; }
+    
+    /* Autocomplétion */
+    .input-wrapper { position: relative; }
+    .suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; z-index: 100; max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 0 0 4px 4px; }
+    .suggestions div { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+    .suggestions div:hover { background-color: #f0f8ff; }
+    
+    /* Bouton */
+    button { background-color: #007bff; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; width: 100%; transition: background 0.2s; }
+    button:hover:not(:disabled) { background-color: #0056b3; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
+    
+    /* Messages d'erreur */
+    .error { color: #dc3545; font-size: 0.9em; margin-top: 5px; display: none; }
+    
+    /* Aide */
+    .help-text { font-size: 0.85em; color: #6c757d; margin-top: -10px; margin-bottom: 15px; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <div class="intro">
+    <strong>📋 Diag Mob - Diagnostic Mobilité</strong><br>
+    Vos réponses sont confidentielles et traitées selon le RGPD. Les champs marqués d'un astérisque (*) sont obligatoires.
+  </div>
+
+  <div class="section">
+    <div class="section-title">1. Vos informations</div>
+    
+    <label class="required">J'accepte le traitement de mes données (RGPD)</label>
+    <div class="radio-group">
+      <div class="radio-item">
+        <input type="radio" id="rgpd-oui" name="rgpd" value="Oui">
+        <label for="rgpd-oui">Oui, j'accepte</label>
+      </div>
+    </div>
+    <div class="error" id="error-rgpd">Vous devez accepter le traitement des données</div>
+    
+    <label class="required">Adresse mail professionnelle (ou personnelle si vous n'en possédez pas)</label>
+    <input type="email" id="email" placeholder="prenom.nom@ministere.gouv.fr">
+    <div class="error" id="error-email">Veuillez saisir un email valide</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">2. Vos trajets</div>
+    
+    <label class="required">Adresse de domicile</label>
+    <div class="input-wrapper">
+      <input type="text" id="input-dom" placeholder="Commencez à saisir votre adresse..." autocomplete="off">
+      <div id="sugg-dom" class="suggestions"></div>
+    </div>
+    <div class="error" id="error-dom">Veuillez sélectionner une adresse dans la liste</div>
+
+    <label class="required">Adresse de travail</label>
+    <div class="input-wrapper">
+      <input type="text" id="input-trav" placeholder="Commencez à saisir votre adresse..." autocomplete="off">
+      <div id="sugg-trav" class="suggestions"></div>
+    </div>
+    <div class="error" id="error-trav">Veuillez sélectionner une adresse dans la liste</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">3. Habitudes de mobilité</div>
+
+    <label class="required">Mode de transport principal</label>
+    <div class="radio-group" id="transport-group">
+      <div class="radio-item">
+        <input type="radio" id="transport-voiture" name="transport" value="Voiture (seul)">
+        <label for="transport-voiture">🚗 Voiture (sans passagers)</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="transport-covoiturage" name="transport" value="Covoiturage">
+        <label for="transport-covoiturage">🚗👥 Covoiturage</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="transport-tc" name="transport" value="Transport en commun">
+        <label for="transport-tc">🚌 Transports en commun</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="transport-velo" name="transport" value="Velo">
+        <label for="transport-velo">🚴 Vélo musculaire</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="transport-velo-elec" name="transport" value="Velo Elec">
+        <label for="transport-velo-elec">🚴⚡ Vélo électrique</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="transport-marche" name="transport" value="Marche">
+        <label for="transport-marche">🚶 Marche à pied</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="transport-intermodalite" name="transport" value="Intermodalite">
+        <label for="transport-intermodalite">🚴🚌 Intermodalité (vélo ou voiture + transports en commun)</label>
+      </div>
+    </div>
+    <div class="error" id="error-transport">Veuillez sélectionner un mode de transport</div>
+
+    <!-- Question conditionnelle : Voiture -->
+    <div class="conditional-question" id="question-parking">
+      <div class="section-title">💬 Question complémentaire</div>
+      <label>Avez-vous des difficultés à vous garer sur votre lieu de travail ?</label>
+      <div class="radio-group">
+        <div class="radio-item">
+          <input type="radio" id="parking-oui" name="parking" value="Oui">
+          <label for="parking-oui">Oui</label>
+        </div>
+        <div class="radio-item">
+          <input type="radio" id="parking-non" name="parking" value="Non">
+          <label for="parking-non">Non</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question conditionnelle : Vélo -->
+    <div class="conditional-question" id="question-mentor">
+      <div class="section-title">💬 Devenir mentor vélo</div>
+      <label>Seriez-vous prêt(e) à être "mentor vélo" une ou deux fois pour accompagner d'autres agents ayant un trajet proche du vôtre ?</label>
+      <div class="help-text">Cela les aiderait à se lancer et découvrir le trajet en vélo en toute confiance.</div>
+      <div class="radio-group">
+        <div class="radio-item">
+          <input type="radio" id="mentor-oui" name="mentor" value="Oui">
+          <label for="mentor-oui">Oui, volontiers !</label>
+        </div>
+        <div class="radio-item">
+          <input type="radio" id="mentor-non" name="mentor" value="Non">
+          <label for="mentor-non">Non, pas pour le moment</label>
+        </div>
+      </div>
+    </div>
+
+    <label class="required">Handicap impactant la mobilité ?</label>
+    <div class="radio-group">
+      <div class="radio-item">
+        <input type="radio" id="handicap-non" name="handicap" value="Non">
+        <label for="handicap-non">Non</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="handicap-oui" name="handicap" value="Oui">
+        <label for="handicap-oui">Oui</label>
+      </div>
+    </div>
+    <div class="error" id="error-handicap">Veuillez répondre à cette question</div>
+
+    <label class="required">Nombre de jours sur site par semaine (en moyenne)</label>
+    <div class="radio-group">
+      <div class="radio-item">
+        <input type="radio" id="jours-1" name="jours-site" value="1">
+        <label for="jours-1">1 jour</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="jours-2" name="jours-site" value="2">
+        <label for="jours-2">2 jours</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="jours-3" name="jours-site" value="3">
+        <label for="jours-3">3 jours</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="jours-4" name="jours-site" value="4">
+        <label for="jours-4">4 jours</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="jours-5" name="jours-site" value="5">
+        <label for="jours-5">5 jours</label>
+      </div>
+    </div>
+    <div class="error" id="error-jours">Veuillez indiquer le nombre de jours</div>
+
+    <label class="required">Jours de présence habituels</label>
+    <div class="checkbox-group">
+      <div class="checkbox-item">
+        <input type="checkbox" id="jour-lundi" name="jour" value="Lundi">
+        <label for="jour-lundi">Lundi</label>
+      </div>
+      <div class="checkbox-item">
+        <input type="checkbox" id="jour-mardi" name="jour" value="Mardi">
+        <label for="jour-mardi">Mardi</label>
+      </div>
+      <div class="checkbox-item">
+        <input type="checkbox" id="jour-mercredi" name="jour" value="Mercredi">
+        <label for="jour-mercredi">Mercredi</label>
+      </div>
+      <div class="checkbox-item">
+        <input type="checkbox" id="jour-jeudi" name="jour" value="Jeudi">
+        <label for="jour-jeudi">Jeudi</label>
+      </div>
+      <div class="checkbox-item">
+        <input type="checkbox" id="jour-vendredi" name="jour" value="Vendredi">
+        <label for="jour-vendredi">Vendredi</label>
+      </div>
+    </div>
+    <div class="error" id="error-jours-presence">Veuillez cocher au moins un jour</div>
+
+    <label class="required">Heure d'arrivée habituelle</label>
+    <div class="radio-group">
+      <div class="radio-item">
+        <input type="radio" id="arrivee-1" name="heure-arrivee" value="Avant 7h30">
+        <label for="arrivee-1">Avant 7h30</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="arrivee-2" name="heure-arrivee" value="7h30-8h30">
+        <label for="arrivee-2">7h30 - 8h30</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="arrivee-3" name="heure-arrivee" value="8h30-9h30">
+        <label for="arrivee-3">8h30 - 9h30</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="arrivee-4" name="heure-arrivee" value="Apres 9h30">
+        <label for="arrivee-4">Après 9h30</label>
+      </div>
+    </div>
+    <div class="error" id="error-arrivee">Veuillez indiquer votre heure d'arrivée</div>
+
+    <label class="required">Heure de départ habituelle</label>
+    <div class="radio-group">
+      <div class="radio-item">
+        <input type="radio" id="depart-1" name="heure-depart" value="Avant 16h30">
+        <label for="depart-1">Avant 16h30</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="depart-2" name="heure-depart" value="16h30-17h30">
+        <label for="depart-2">16h30 - 17h30</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="depart-3" name="heure-depart" value="17h30-18h30">
+        <label for="depart-3">17h30 - 18h30</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="depart-4" name="heure-depart" value="Apres 18h30">
+        <label for="depart-4">Après 18h30</label>
+      </div>
+    </div>
+    <div class="error" id="error-depart">Veuillez indiquer votre heure de départ</div>
+  </div>
+
+  <button id="btn-envoyer" onclick="envoyerReponse()">Envoyer ma réponse</button>
+
+  <script>
+    let selectedTable = null;
+    let currentRecord = null;
+    
+    grist.ready({
+      requiredAccess: 'full',
+      columns: [
+        { name: 'Adresse_Domicile', optional: true },
+        { name: 'Adresse_Travail', optional: true },
+        { name: 'GPS_Dom_Lat', optional: true },
+        { name: 'GPS_Dom_Lon', optional: true },
+        { name: 'GPS_Trav_Lat', optional: true },
+        { name: 'GPS_Trav_Lon', optional: true },
+        { name: 'Distance_Voiture_km', optional: true },
+        { name: 'Temps_Voiture_min', optional: true },
+        { name: 'Distance_Velo_km', optional: true },
+        { name: 'Temps_Velo_min', optional: true },
+        { name: 'Trajet_Voiture_GeoJSON', optional: true },
+        { name: 'Trajet_Velo_GeoJSON', optional: true },
+        { name: 'Email_Pro', optional: true },
+        { name: 'Consentement_RGPD', optional: true },
+        { name: 'Mode_Transport', optional: true },
+        { name: 'Difficulte_Parking', optional: true },
+        { name: 'Mentor_Velo', optional: true },
+        { name: 'Handicap', optional: true },
+        { name: 'Jours_Site_Moyenne', optional: true },
+        { name: 'Jours_Presence', optional: true },
+        { name: 'Heure_Arrivee', optional: true },
+        { name: 'Heure_Depart', optional: true }
+      ]
+    });
+
+    grist.onRecords(async function(records, mappings) {
+      try {
+        selectedTable = await grist.getTable();
+        console.log('✅ Table initialisée');
+      } catch(e) {
+        console.error('❌ Erreur initialisation table:', e);
+      }
+    });
+
+    grist.onRecord(function(record) {
+      currentRecord = record;
+    });
+
+    let gpsData = {
+      dom: { addr: '', lat: null, lon: null },
+      trav: { addr: '', lat: null, lon: null },
+      route: { 
+        distVoiture: 0, 
+        dureeVoiture: 0, 
+        distVelo: 0, 
+        dureeVelo: 0,
+        geojsonVoiture: null,
+        geojsonVelo: null
+      }
+    };
+
+    // Autocomplétion BAN avec RETRY et FALLBACK robuste
+    function setupAutocomplete(inputId, listId, type) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById(listId);
+      const errorDiv = document.getElementById('error-' + type);
+      let timeout;
+      let retryCount = 0;
+      const MAX_RETRIES = 3;
+      
+      input.addEventListener('input', () => {
+        clearTimeout(timeout);
+        const q = input.value.trim();
+        
+        if (gpsData[type].addr && input.value !== gpsData[type].addr) {
+          gpsData[type] = { addr: '', lat: null, lon: null };
+          if (errorDiv) errorDiv.style.display = 'none';
+        }
+        
+        if (q.length < 3) { 
+          list.style.display = 'none'; 
+          return; 
+        }
+        
+        timeout = setTimeout(() => fetchAddresses(q), 300);
+      });
+      
+      async function fetchAddresses(query, retry = 0) {
+        try {
+          list.innerHTML = '<div style="color: #666; padding: 10px;">🔄 Recherche en cours...</div>';
+          list.style.display = 'block';
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 secondes max
+          
+          const r = await fetch(
+            `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&limit=5`,
+            { signal: controller.signal }
+          );
+          
+          clearTimeout(timeoutId);
+          
+          if (!r.ok) throw new Error('API error');
+          
+          const d = await r.json();
+          list.innerHTML = '';
+          
+          if (d.features?.length) {
+            list.style.display = 'block';
+            d.features.forEach(f => {
+              const div = document.createElement('div');
+              div.innerHTML = `<strong>${f.properties.label}</strong>`;
+              div.onclick = () => {
+                input.value = f.properties.label;
+                gpsData[type].addr = f.properties.label;
+                gpsData[type].lon = f.geometry.coordinates[0];
+                gpsData[type].lat = f.geometry.coordinates[1];
+                list.style.display = 'none';
+                if (errorDiv) errorDiv.style.display = 'none';
+                calcRoute();
+              };
+              list.appendChild(div);
+            });
+            
+            // Option fallback : utiliser quand même le texte saisi
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.style.borderTop = '2px solid #eee';
+            fallbackDiv.style.marginTop = '10px';
+            fallbackDiv.style.paddingTop = '10px';
+            fallbackDiv.style.fontStyle = 'italic';
+            fallbackDiv.style.color = '#666';
+            fallbackDiv.innerHTML = '✏️ Ou valider l\'adresse saisie telle quelle';
+            fallbackDiv.onclick = () => {
+              gpsData[type].addr = input.value;
+              gpsData[type].lat = null; // Pas de GPS pour l'instant
+              gpsData[type].lon = null;
+              list.style.display = 'none';
+              if (errorDiv) errorDiv.style.display = 'none';
+            };
+            list.appendChild(fallbackDiv);
+            
+          } else {
+            // Aucun résultat : proposer de valider quand même
+            list.innerHTML = `
+              <div style="padding: 10px;">
+                <div style="color: #999; margin-bottom: 10px;">Aucune adresse trouvée</div>
+                <div style="color: #666; font-style: italic; cursor: pointer; background: #f0f0f0; padding: 8px; border-radius: 4px;" 
+                     onclick="validManualAddress('${type}', '${query.replace(/'/g, "\\'")}')">
+                  ✏️ Utiliser "${query}" quand même
+                </div>
+              </div>
+            `;
+            list.style.display = 'block';
+          }
+          
+          retryCount = 0; // Reset retry count
+          
+        } catch(e) {
+          console.error('Erreur autocomplétion:', e);
+          
+          if (retry < MAX_RETRIES) {
+            retryCount++;
+            list.innerHTML = `<div style="color: #ff6600; padding: 10px;">⚠️ Erreur réseau, nouvelle tentative ${retryCount}/${MAX_RETRIES}...</div>`;
+            setTimeout(() => fetchAddresses(query, retry + 1), 1000 * retry);
+          } else {
+            // Échec définitif : proposer validation manuelle
+            list.innerHTML = `
+              <div style="padding: 10px;">
+                <div style="color: #dc3545; margin-bottom: 10px;">❌ L'autocomplétion ne répond pas</div>
+                <div style="color: #666; font-style: italic; cursor: pointer; background: #fff3cd; padding: 8px; border-radius: 4px; border: 1px solid #ffc107;" 
+                     onclick="validManualAddress('${type}', '${query.replace(/'/g, "\\'")}')">
+                  ✏️ Utiliser "${query}" (sans GPS pour l'instant)
+                </div>
+                <div style="font-size: 0.85em; color: #666; margin-top: 8px;">
+                  💡 Les coordonnées GPS seront calculées ultérieurement
+                </div>
+              </div>
+            `;
+            list.style.display = 'block';
+          }
+        }
+      }
+      
+      document.addEventListener('click', e => { 
+        if(e.target !== input && !list.contains(e.target)) {
+          list.style.display='none'; 
+        }
+      });
+    }
+    
+    // Fonction pour valider manuellement une adresse
+    window.validManualAddress = function(type, address) {
+      const input = document.getElementById(type === 'dom' ? 'input-dom' : 'input-trav');
+      const list = document.getElementById(type === 'dom' ? 'sugg-dom' : 'sugg-trav');
+      
+      input.value = address;
+      gpsData[type].addr = address;
+      gpsData[type].lat = null;
+      gpsData[type].lon = null;
+      list.style.display = 'none';
+      
+      console.log('⚠️ Adresse validée sans GPS:', address);
+    };
+    
+    setupAutocomplete('input-dom', 'sugg-dom', 'dom');
+    setupAutocomplete('input-trav', 'sugg-trav', 'trav');
+
+    // Calcul itinéraire (en arrière-plan, SANS affichage à l'utilisateur)
+    async function calcRoute() {
+      if(!gpsData.dom.lat || !gpsData.trav.lat) return;
+      
+      const p1 = `${gpsData.dom.lon},${gpsData.dom.lat}`;
+      const p2 = `${gpsData.trav.lon},${gpsData.trav.lat}`;
+      
+      try {
+        // Voiture - AVEC géométrie complète (overview=full)
+        const rCar = await fetch(`https://router.project-osrm.org/route/v1/driving/${p1};${p2}?overview=full&geometries=geojson`);
+        const jCar = await rCar.json();
+        if(jCar.routes?.[0]) {
+          gpsData.route.distVoiture = (jCar.routes[0].distance / 1000).toFixed(2);
+          gpsData.route.dureeVoiture = Math.round(jCar.routes[0].duration / 60);
+          // Stocker le GeoJSON complet
+          gpsData.route.geojsonVoiture = JSON.stringify(jCar.routes[0].geometry);
+          console.log('✅ Trajet voiture calculé:', gpsData.route.distVoiture, 'km');
+        }
+        
+        // Vélo - AVEC géométrie complète (overview=full)
+        const rBike = await fetch(`https://router.project-osrm.org/route/v1/cycling/${p1};${p2}?overview=full&geometries=geojson`);
+        const jBike = await rBike.json();
+        if(jBike.routes?.[0]) {
+          gpsData.route.distVelo = (jBike.routes[0].distance / 1000).toFixed(2);
+          gpsData.route.dureeVelo = Math.round(jBike.routes[0].duration / 60);
+          // Stocker le GeoJSON complet
+          gpsData.route.geojsonVelo = JSON.stringify(jBike.routes[0].geometry);
+          console.log('✅ Trajet vélo calculé:', gpsData.route.distVelo, 'km');
+        }
+        
+        console.log('✅ Trajets calculés (GeoJSON stockés)');
+        // PAS d'affichage à l'utilisateur
+        
+      } catch(e) {
+        console.error('Erreur calcul trajet:', e);
+      }
+    }
+
+    // Gestion des questions conditionnelles
+    document.querySelectorAll('input[name="transport"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        const questionParking = document.getElementById('question-parking');
+        const questionMentor = document.getElementById('question-mentor');
+        
+        // Reset
+        questionParking.classList.remove('show');
+        questionMentor.classList.remove('show');
+        
+        // Voiture ou covoiturage → question parking
+        if (this.value === 'Voiture (seul)' || this.value === 'Covoiturage') {
+          questionParking.classList.add('show');
+        }
+        
+        // Vélo → question mentor
+        if (this.value === 'Velo' || this.value === 'Velo Elec') {
+          questionMentor.classList.add('show');
+        }
+      });
+    });
+
+    // Validation et envoi
+    async function envoyerReponse() {
+      const btn = document.getElementById('btn-envoyer');
+      let hasError = false;
+      
+      // Reset erreurs
+      document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+      
+      // RGPD
+      if(!document.querySelector('input[name="rgpd"]:checked')) {
+        document.getElementById('error-rgpd').style.display = 'block';
+        hasError = true;
+      }
+      
+      // Email
+      const email = document.getElementById('email').value;
+      if(!email || !email.includes('@')) { 
+        document.getElementById('error-email').style.display = 'block';
+        hasError = true;
+      }
+      
+      // Adresses
+      if(!gpsData.dom.addr) { 
+        document.getElementById('error-dom').style.display = 'block';
+        hasError = true;
+      }
+      
+      if(!gpsData.trav.addr) { 
+        document.getElementById('error-trav').style.display = 'block';
+        hasError = true;
+      }
+      
+      // Mode transport
+      if(!document.querySelector('input[name="transport"]:checked')) {
+        document.getElementById('error-transport').style.display = 'block';
+        hasError = true;
+      }
+      
+      // Handicap
+      if(!document.querySelector('input[name="handicap"]:checked')) {
+        document.getElementById('error-handicap').style.display = 'block';
+        hasError = true;
+      }
+      
+      // Jours sur site
+      if(!document.querySelector('input[name="jours-site"]:checked')) {
+        document.getElementById('error-jours').style.display = 'block';
+        hasError = true;
+      }
+      
+      // Jours de présence (au moins 1)
+      const joursCoches = document.querySelectorAll('input[name="jour"]:checked');
+      if(joursCoches.length === 0) {
+        document.getElementById('error-jours-presence').style.display = 'block';
+        hasError = true;
+      }
+      
+      // Heure arrivée
+      if(!document.querySelector('input[name="heure-arrivee"]:checked')) {
+        document.getElementById('error-arrivee').style.display = 'block';
+        hasError = true;
+      }
+      
+      // Heure départ
+      if(!document.querySelector('input[name="heure-depart"]:checked')) {
+        document.getElementById('error-depart').style.display = 'block';
+        hasError = true;
+      }
+      
+      if(hasError) {
+        alert("⚠️ Veuillez remplir tous les champs obligatoires.");
+        return;
+      }
+
+      if (!selectedTable) {
+        alert("❌ Table non initialisée. Veuillez rafraîchir la page.");
+        return;
+      }
+
+      btn.disabled = true; 
+      btn.innerText = "⏳ Envoi en cours...";
+
+      try {
+        const fields = {};
+        
+        // Adresses (toujours envoyées)
+        fields.Adresse_Domicile = gpsData.dom.addr;
+        fields.Adresse_Travail = gpsData.trav.addr;
+        
+        // GPS (seulement si disponibles)
+        if (gpsData.dom.lat && gpsData.dom.lon) {
+          fields.GPS_Dom_Lat = gpsData.dom.lat;
+          fields.GPS_Dom_Lon = gpsData.dom.lon;
+        }
+        
+        if (gpsData.trav.lat && gpsData.trav.lon) {
+          fields.GPS_Trav_Lat = gpsData.trav.lat;
+          fields.GPS_Trav_Lon = gpsData.trav.lon;
+        }
+        
+        // Trajets (seulement si GPS disponibles)
+        if (gpsData.route.distVoiture > 0) {
+          fields.Distance_Voiture_km = parseFloat(gpsData.route.distVoiture);
+          fields.Temps_Voiture_min = gpsData.route.dureeVoiture;
+        }
+        if (gpsData.route.distVelo > 0) {
+          fields.Distance_Velo_km = parseFloat(gpsData.route.distVelo);
+          fields.Temps_Velo_min = gpsData.route.dureeVelo;
+        }
+        
+        // GeoJSON des trajets (seulement si disponibles)
+        if (gpsData.route.geojsonVoiture) {
+          fields.Trajet_Voiture_GeoJSON = gpsData.route.geojsonVoiture;
+        }
+        if (gpsData.route.geojsonVelo) {
+          fields.Trajet_Velo_GeoJSON = gpsData.route.geojsonVelo;
+        }
+        
+        // Informations
+        fields.Email_Pro = email;
+        fields.Consentement_RGPD = "Oui";
+        fields.Mode_Transport = document.querySelector('input[name="transport"]:checked').value;
+        
+        // Handicap (Boolean Toggle)
+        fields.Handicap = document.querySelector('input[name="handicap"]:checked').value === "Oui";
+        
+        fields.Jours_Site_Moyenne = parseInt(document.querySelector('input[name="jours-site"]:checked').value);
+        
+        // Jours présence
+        const jours = Array.from(joursCoches).map(cb => cb.value).join(', ');
+        fields.Jours_Presence = jours;
+        
+        fields.Heure_Arrivee = document.querySelector('input[name="heure-arrivee"]:checked').value;
+        fields.Heure_Depart = document.querySelector('input[name="heure-depart"]:checked').value;
+        
+        // Questions conditionnelles (Boolean Toggle)
+        const parkingChecked = document.querySelector('input[name="parking"]:checked');
+        if (parkingChecked) {
+          fields.Difficulte_Parking = parkingChecked.value === "Oui";
+        }
+        
+        const mentorChecked = document.querySelector('input[name="mentor"]:checked');
+        if (mentorChecked) {
+          fields.Mentor_Velo = mentorChecked.value === "Oui";
+        }
+
+        console.log('📤 Création enregistrement:', fields);
+
+        await selectedTable.create({ fields: fields });
+        
+        console.log('✅ Enregistrement créé avec succès');
+        
+        // Message de succès adapté
+        const hasGPS = gpsData.dom.lat && gpsData.trav.lat;
+        const successMsg = hasGPS 
+          ? 'Votre réponse a été enregistrée avec succès.'
+          : 'Votre réponse a été enregistrée avec succès.<br><small style="color:#856404;">⚠️ Les coordonnées GPS seront calculées ultérieurement.</small>';
+        
+        // Message de succès
+        document.body.innerHTML = `
+          <div style="text-align:center; padding:50px; color:#28a745; background:white; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); max-width:500px; margin:50px auto;">
+            <div style="font-size:64px; margin-bottom:20px;">✅</div>
+            <h2 style="color:#28a745; margin:0 0 10px 0;">Merci !</h2>
+            <p style="color:#666; font-size:16px; margin:0;">
+              ${successMsg}
+            </p>
+          </div>
+        `;
+
+      } catch (e) {
+        console.error('❌ Erreur:', e);
+        alert("❌ Erreur : " + e.message);
+        btn.disabled = false;
+        btn.innerText = "Réessayer";
+      }
+    }
+  </script>
+</body>
+</html>
