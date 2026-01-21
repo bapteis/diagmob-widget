@@ -281,6 +281,8 @@
         { name: 'Temps_Voiture_min', optional: true },
         { name: 'Distance_Velo_km', optional: true },
         { name: 'Temps_Velo_min', optional: true },
+        { name: 'Trajet_Voiture_GeoJSON', optional: true },
+        { name: 'Trajet_Velo_GeoJSON', optional: true },
         { name: 'Email_Pro', optional: true },
         { name: 'Consentement_RGPD', optional: true },
         { name: 'Mode_Transport', optional: true },
@@ -310,7 +312,14 @@
     let gpsData = {
       dom: { addr: '', lat: null, lon: null },
       trav: { addr: '', lat: null, lon: null },
-      route: { distVoiture: 0, dureeVoiture: 0, distVelo: 0, dureeVelo: 0 }
+      route: { 
+        distVoiture: 0, 
+        dureeVoiture: 0, 
+        distVelo: 0, 
+        dureeVelo: 0,
+        geojsonVoiture: null,
+        geojsonVelo: null
+      }
     };
 
     // Autocomplétion BAN (SANS afficher le % de confiance)
@@ -385,23 +394,29 @@
       const p2 = `${gpsData.trav.lon},${gpsData.trav.lat}`;
       
       try {
-        // Voiture
-        const rCar = await fetch(`https://router.project-osrm.org/route/v1/driving/${p1};${p2}?overview=false`);
+        // Voiture - AVEC géométrie complète (overview=full)
+        const rCar = await fetch(`https://router.project-osrm.org/route/v1/driving/${p1};${p2}?overview=full&geometries=geojson`);
         const jCar = await rCar.json();
         if(jCar.routes?.[0]) {
           gpsData.route.distVoiture = (jCar.routes[0].distance / 1000).toFixed(2);
           gpsData.route.dureeVoiture = Math.round(jCar.routes[0].duration / 60);
+          // Stocker le GeoJSON complet
+          gpsData.route.geojsonVoiture = JSON.stringify(jCar.routes[0].geometry);
+          console.log('✅ Trajet voiture calculé:', gpsData.route.distVoiture, 'km');
         }
         
-        // Vélo
-        const rBike = await fetch(`https://router.project-osrm.org/route/v1/cycling/${p1};${p2}?overview=false`);
+        // Vélo - AVEC géométrie complète (overview=full)
+        const rBike = await fetch(`https://router.project-osrm.org/route/v1/cycling/${p1};${p2}?overview=full&geometries=geojson`);
         const jBike = await rBike.json();
         if(jBike.routes?.[0]) {
           gpsData.route.distVelo = (jBike.routes[0].distance / 1000).toFixed(2);
           gpsData.route.dureeVelo = Math.round(jBike.routes[0].duration / 60);
+          // Stocker le GeoJSON complet
+          gpsData.route.geojsonVelo = JSON.stringify(jBike.routes[0].geometry);
+          console.log('✅ Trajet vélo calculé:', gpsData.route.distVelo, 'km');
         }
         
-        console.log('✅ Trajets calculés:', gpsData.route);
+        console.log('✅ Trajets calculés (GeoJSON stockés)');
         // PAS d'affichage à l'utilisateur
         
       } catch(e) {
@@ -532,6 +547,14 @@
         if (gpsData.route.distVelo > 0) {
           fields.Distance_Velo_km = parseFloat(gpsData.route.distVelo);
           fields.Temps_Velo_min = gpsData.route.dureeVelo;
+        }
+        
+        // GeoJSON des trajets (pour analyse spatiale)
+        if (gpsData.route.geojsonVoiture) {
+          fields.Trajet_Voiture_GeoJSON = gpsData.route.geojsonVoiture;
+        }
+        if (gpsData.route.geojsonVelo) {
+          fields.Trajet_Velo_GeoJSON = gpsData.route.geojsonVelo;
         }
         
         // Informations
