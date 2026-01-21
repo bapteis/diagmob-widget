@@ -156,7 +156,7 @@
       </div>
     </div>
 
-    <label>Handicap impactant la mobilité ?</label>
+    <label class="required">Handicap impactant la mobilité ?</label>
     <div class="radio-group">
       <div class="radio-item">
         <input type="radio" id="handicap-non" name="handicap" value="Non">
@@ -485,12 +485,12 @@
       }
       
       // Handicap
-      /*
+      
       if(!document.querySelector('input[name="handicap"]:checked')) {
         document.getElementById('error-handicap').style.display = 'block';
         hasError = true;
       }
-      */
+      
       // Jours sur site
       if(!document.querySelector('input[name="jours-site"]:checked')) {
         document.getElementById('error-jours').style.display = 'block';
@@ -564,11 +564,11 @@
         fields.Mode_Transport = document.querySelector('input[name="transport"]:checked').value;
         
         // Handicap (Boolean Toggle)
-        //fields.Handicap = document.querySelector('input[name="handicap"]:checked').value === "Oui";
-        const transportChecked = document.querySelector('input[name="transport"]:checked');
+        fields.Handicap = document.querySelector('input[name="handicap"]:checked').value === "Oui";
+        /* const transportChecked = document.querySelector('input[name="transport"]:checked');
         if (transportChecked) {
           fields.Mode_Transport = transportChecked.value;
-          
+          */
         fields.Jours_Site_Moyenne = parseInt(document.querySelector('input[name="jours-site"]:checked').value);
         
         // Jours présence
