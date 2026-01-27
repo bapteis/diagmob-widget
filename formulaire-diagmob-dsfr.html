@@ -31,12 +31,6 @@
       gap: 0.75rem;
     }
     
-    /* Supprimer la disposition en grille par défaut */
-    .fr-fieldset--inline .fr-fieldset__content {
-      display: flex;
-      flex-direction: column;
-    }
-    
     /* Chaque groupe d'input sur toute la largeur */
     .fr-input-group,
     .fr-select-group,
@@ -44,6 +38,14 @@
     .fr-radio-group {
       width: 100%;
       max-width: 100%;
+    }
+    
+    /* Fix checkbox Lundi - forcer carré parfait */
+    .fr-checkbox-group input[type="checkbox"] {
+      width: 1.5rem !important;
+      height: 1.5rem !important;
+      min-width: 1.5rem !important;
+      min-height: 1.5rem !important;
     }
     
     /* Suggestions autocomplétion */
@@ -90,9 +92,40 @@
       margin-bottom: 2rem;
     }
     
-    /* Légende section */
-    .fr-fieldset__legend h2 {
-      margin-bottom: 1rem;
+    /* Questions conditionnelles */
+    .question-conditionnelle {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: var(--background-alt-blue-france);
+      border-radius: 4px;
+      border-left: 3px solid var(--border-action-high-blue-france);
+    }
+    
+    .question-conditionnelle.visible {
+      display: block;
+    }
+    
+    /* Texte intro */
+    .intro-text {
+      background-color: var(--background-alt-blue-france);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+    }
+    
+    .intro-text ul {
+      margin: 0.5rem 0;
+      padding-left: 1.5rem;
+    }
+    
+    .intro-text li {
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Select avec plus d'options visibles */
+    .fr-select {
+      max-height: none;
     }
   </style>
 </head>
@@ -101,12 +134,27 @@
   <div class="container-formulaire">
     
     <!-- En-tête -->
-    <div class="fr-mb-4w">
+    <div class="fr-mb-2w">
       <h1 class="fr-h3">📋 Diag Mob - Diagnostic Mobilité</h1>
       <p class="fr-text--sm fr-mb-0">
         Vos réponses sont confidentielles et traitées selon le RGPD. 
         Les champs marqués d'un astérisque (*) sont obligatoires.
       </p>
+    </div>
+
+    <!-- Texte introductif -->
+    <div class="intro-text">
+      <p><strong>Bonjour,</strong></p>
+      <p>Et si vos trajets domicile-travail devenaient plus économiques, conviviaux et écologiques ?</p>
+      <p>Nous lançons un service numérique sur le potentiel de mobilité alternatives entre agents publics, portée par le ministère des Transports et la Fabrique Numérique.</p>
+      <p>👉 <strong>Exemple concret :</strong> un agent qui habite à 30 km de son lieu de travail et covoiture en alternance avec un collègue économise près de <strong>2 000 € par an</strong>.</p>
+      <p>En répondant à ce questionnaire, vous pourrez :</p>
+      <ul>
+        <li>Réduire vos frais de déplacement,</li>
+        <li>Être mis en relation avec des collègues proches de chez vous pour expérimenter le covoiturage ou le vélotaf,</li>
+        <li>Bénéficier du Forfait Mobilités Durables (100 à 300 € par an),</li>
+        <li>Contribuer à la transition écologique.</li>
+      </ul>
     </div>
 
     <!-- Message succès -->
@@ -127,19 +175,13 @@
         
         <div class="fr-fieldset__content">
           
-          <!-- RGPD -->
-          <div class="fr-form-group">
-            <fieldset class="fr-fieldset">
-              <legend class="fr-fieldset__legend fr-text--regular">
-                J'accepte le traitement de mes données (RGPD) <span class="fr-hint-text">*</span>
-              </legend>
-              <div class="fr-fieldset__content">
-                <div class="fr-radio-group">
-                  <input type="radio" id="rgpd-oui" name="rgpd" value="Oui" required>
-                  <label class="fr-label" for="rgpd-oui">Oui, j'accepte</label>
-                </div>
-              </div>
-            </fieldset>
+          <!-- RGPD avec texte complet -->
+          <div class="fr-checkbox-group">
+            <input type="checkbox" id="rgpd" name="rgpd" value="Oui" required>
+            <label class="fr-label" for="rgpd">
+              J'accepte le traitement de mes données (RGPD) *
+              <span class="fr-hint-text">J'accepte que mes données personnelles (ville de domicile, adresse de travail et adresse e-mail) soient utilisées uniquement dans le cadre de cette démarche de cartographie des trajets et de changement d'habitude de mobilités par l'équipe Diag'Mob et les référents mobilités de mon service, pendant une durée maximale de 12 mois, conformément aux informations fournies sur notre page RGPD.</span>
+            </label>
           </div>
 
           <!-- Email -->
@@ -156,7 +198,7 @@
             <label class="fr-label" for="service">
               Service / Ministère de rattachement *
             </label>
-            <select class="fr-select" id="service" name="service" required>
+            <select class="fr-select" id="service" name="service" required size="1">
               <option value="">-- Sélectionnez votre service --</option>
               <!-- Options chargées dynamiquement depuis Grist -->
             </select>
@@ -251,6 +293,42 @@
                 </div>
               </div>
             </fieldset>
+            
+            <!-- Question conditionnelle : Difficulté parking (si voiture) -->
+            <div class="question-conditionnelle" id="question-parking">
+              <div class="fr-checkbox-group">
+                <input type="checkbox" id="difficulte-parking" name="difficulte-parking" value="true">
+                <label class="fr-label" for="difficulte-parking">
+                  J'ai des difficultés à me garer sur mon lieu de travail
+                </label>
+              </div>
+            </div>
+            
+            <!-- Question conditionnelle : Mentor vélo (si vélo) -->
+            <div class="question-conditionnelle" id="question-mentor-velo">
+              <div class="fr-checkbox-group">
+                <input type="checkbox" id="mentor-velo" name="mentor-velo" value="true">
+                <label class="fr-label" for="mentor-velo">
+                  Je suis prêt(e) à être mentor vélo pour accompagner un collègue dans ses premiers trajets
+                  <span class="fr-hint-text">Vous pourrez être mis en relation avec des collègues souhaitant débuter le vélotaf</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nombre de jours présent sur site par semaine -->
+          <div class="fr-select-group">
+            <label class="fr-label" for="nb-jours-semaine">
+              Nombre de jours présent sur site par semaine *
+            </label>
+            <select class="fr-select" id="nb-jours-semaine" name="nb-jours-semaine" required>
+              <option value="">-- Sélectionnez --</option>
+              <option value="1">1 jour</option>
+              <option value="2">2 jours</option>
+              <option value="3">3 jours</option>
+              <option value="4">4 jours</option>
+              <option value="5">5 jours</option>
+            </select>
           </div>
 
           <!-- Jours de présence -->
@@ -359,37 +437,114 @@
     // Charger la liste des services depuis Grist
     async function chargerServices() {
       try {
-        const tableData = await grist.docApi.fetchTable('liste_services');
+        // Essayer de charger depuis plusieurs tables possibles
+        let services = [];
+        
+        try {
+          // Tenter de lire la table principale DiagmobV2 et sa colonne Service
+          const tableData = await grist.docApi.fetchTable('DiagmobV2');
+          if (tableData && tableData.Service) {
+            // Récupérer les valeurs uniques
+            const uniqueServices = [...new Set(tableData.Service.filter(s => s && s.trim()))];
+            services = uniqueServices.sort();
+          }
+        } catch (e1) {
+          console.log('Table DiagmobV2 non trouvée, essai liste_services...');
+          try {
+            const listeData = await grist.docApi.fetchTable('liste_services');
+            const colName = listeData.Service || listeData.Libelle || listeData.Nom || listeData.service || [];
+            services = colName.filter(s => s && s.trim()).sort();
+          } catch (e2) {
+            console.log('Table liste_services non trouvée');
+          }
+        }
+        
         const select = document.getElementById('service');
         select.innerHTML = '<option value="">-- Sélectionnez votre service --</option>';
         
-        // Si la table a une colonne "Service" ou "Libelle"
-        const services = tableData.Service || tableData.Libelle || tableData.Nom || [];
-        
-        services.forEach((service) => {
-          if (service) {
+        if (services.length > 0) {
+          services.forEach((service) => {
             const option = document.createElement('option');
             option.value = service;
             option.textContent = service;
             select.appendChild(option);
-          }
-        });
+          });
+          console.log(`${services.length} services chargés depuis Grist`);
+        } else {
+          // Fallback liste statique
+          chargerServicesStatiques();
+        }
+        
       } catch (error) {
         console.log('Mode standalone - Liste services statique');
-        // Fallback si pas de Grist : liste statique exemple
-        const select = document.getElementById('service');
-        select.innerHTML = `
-          <option value="">-- Sélectionnez votre service --</option>
-          <option value="DGITM">DGITM - Direction Générale des Infrastructures, des Transports et des Mobilités</option>
-          <option value="DREAL">DREAL - Direction Régionale de l'Environnement, de l'Aménagement et du Logement</option>
-          <option value="DRAAF">DRAAF - Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt</option>
-          <option value="France Travail">France Travail</option>
-          <option value="Autre">Autre</option>
-        `;
+        chargerServicesStatiques();
       }
     }
     
+    function chargerServicesStatiques() {
+      const select = document.getElementById('service');
+      const servicesStatiques = [
+        "DGITM - Direction Générale des Infrastructures, des Transports et des Mobilités",
+        "DREAL Auvergne-Rhône-Alpes",
+        "DREAL Bourgogne-Franche-Comté",
+        "DREAL Bretagne",
+        "DREAL Centre-Val de Loire",
+        "DREAL Corse",
+        "DREAL Grand Est",
+        "DREAL Hauts-de-France",
+        "DREAL Île-de-France",
+        "DREAL Normandie",
+        "DREAL Nouvelle-Aquitaine",
+        "DREAL Occitanie",
+        "DREAL Pays de la Loire",
+        "DREAL Provence-Alpes-Côte d'Azur",
+        "DRAAF - Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt",
+        "DDT - Direction Départementale des Territoires",
+        "DDTM - Direction Départementale des Territoires et de la Mer",
+        "France Travail",
+        "Préfecture",
+        "Autre service"
+      ];
+      
+      select.innerHTML = '<option value="">-- Sélectionnez votre service --</option>';
+      servicesStatiques.forEach((service) => {
+        const option = document.createElement('option');
+        option.value = service;
+        option.textContent = service;
+        select.appendChild(option);
+      });
+    }
+    
     chargerServices();
+
+    // ═══════════════════════════════════════════════════════════════
+    // QUESTIONS CONDITIONNELLES
+    // ═══════════════════════════════════════════════════════════════
+    const transportInputs = document.querySelectorAll('input[name="transport"]');
+    const questionParking = document.getElementById('question-parking');
+    const questionMentorVelo = document.getElementById('question-mentor-velo');
+    
+    transportInputs.forEach(input => {
+      input.addEventListener('change', function() {
+        const value = this.value;
+        
+        // Afficher question parking si voiture (sans passagers) ou covoiturage
+        if (value === 'Voiture (sans passagers)' || value === 'Covoiturage') {
+          questionParking.classList.add('visible');
+        } else {
+          questionParking.classList.remove('visible');
+          document.getElementById('difficulte-parking').checked = false;
+        }
+        
+        // Afficher question mentor vélo si vélo
+        if (value === 'Vélo musculaire' || value === 'Vélo électrique') {
+          questionMentorVelo.classList.add('visible');
+        } else {
+          questionMentorVelo.classList.remove('visible');
+          document.getElementById('mentor-velo').checked = false;
+        }
+      });
+    });
 
     // ═══════════════════════════════════════════════════════════════
     // AUTOCOMPLÉTION ADRESSES (API BAN)
@@ -470,6 +625,12 @@
     document.getElementById('diagmob-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       
+      // Validation RGPD
+      if (!document.getElementById('rgpd').checked) {
+        alert('Veuillez accepter le traitement de vos données (RGPD).');
+        return;
+      }
+      
       // Validation GPS
       if (!gpsData.domicile.lat || !gpsData.travail.lat) {
         alert('Veuillez sélectionner une adresse dans la liste de suggestions pour le domicile et le travail.');
@@ -481,6 +642,9 @@
       const service = document.getElementById('service').value;
       const telephone = document.getElementById('telephone').value || '';
       const handicap = document.getElementById('handicap').checked;
+      const difficuteParking = document.getElementById('difficulte-parking').checked;
+      const mentorVelo = document.getElementById('mentor-velo').checked;
+      const nbJoursSemaine = document.getElementById('nb-jours-semaine').value;
       
       // Jours de présence
       const joursChecked = document.querySelectorAll('input[name="jours"]:checked');
@@ -496,6 +660,8 @@
         Service: service,
         Telephone: telephone,
         Handicap: handicap,
+        Difficulte_Parking: difficuteParking,
+        Mentor_Velo: mentorVelo,
         Adresse_Domicile: gpsData.domicile.label,
         GPS_Dom_Lat: gpsData.domicile.lat,
         GPS_Dom_Lon: gpsData.domicile.lon,
@@ -503,6 +669,7 @@
         GPS_Trav_Lat: gpsData.travail.lat,
         GPS_Trav_Lon: gpsData.travail.lon,
         Mode_Transport: document.querySelector('input[name="transport"]:checked').value,
+        Jours_Site_Moyenne: parseInt(nbJoursSemaine),
         Jours_Presence: jours,
         Heure_Arrivee: document.getElementById('heure-arrivee').value,
         Heure_Depart: document.getElementById('heure-depart').value
@@ -522,6 +689,14 @@
         // Succès
         document.getElementById('success-message').style.display = 'block';
         document.getElementById('diagmob-form').reset();
+        
+        // Réinitialiser les questions conditionnelles
+        questionParking.classList.remove('visible');
+        questionMentorVelo.classList.remove('visible');
+        
+        // Réinitialiser les données GPS
+        gpsData.domicile = { lat: null, lon: null, label: '' };
+        gpsData.travail = { lat: null, lon: null, label: '' };
         
         // Scroll vers le haut pour voir le message
         window.scrollTo({ top: 0, behavior: 'smooth' });
