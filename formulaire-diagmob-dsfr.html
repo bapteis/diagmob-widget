@@ -197,9 +197,7 @@
             <label class="fr-label" for="service">
               Service / Ministère de rattachement *
             </label>
-            <select id="service" name="service" required 
-                data-grist-table="liste_services" 
-                data-grist-column="Libellé">
+            <select class="fr-select" id="service" name="service" required>
               <option value="">— Sélectionnez votre service —</option>
             </select>
           </div>
@@ -434,49 +432,52 @@
     // ═══════════════════════════════════════════════════════════════
     grist.ready();
     
+    // Configuration Grist (à adapter selon ton document)
+    const GRIST_CONFIG = {
+      docId: 'votre_doc_id',  // ID de ton document Grist
+      tableServices: 'liste_services',  // Table contenant les services
+      colonneListe: 'Libellé'  // Colonne à afficher
+    };
+    
     // Charger la liste des services depuis Grist
     async function chargerServices() {
       try {
-        // Essayer de charger depuis plusieurs tables possibles
-        let services = [];
+        // Attendre que Grist soit prêt
+        await grist.ready();
         
-        try {
-          // Tenter de lire la table principale DiagmobV2 et sa colonne Service
-          const tableData = await grist.docApi.fetchTable('DiagmobV2');
-          if (tableData && tableData.Service) {
-            // Récupérer les valeurs uniques
-            const uniqueServices = [...new Set(tableData.Service.filter(s => s && s.trim()))];
-            services = uniqueServices.sort();
-          }
-        } catch (e1) {
-          console.log('Table DiagmobV2 non trouvée, essai liste_services...');
-          try {
-            const listeData = await grist.docApi.fetchTable('liste_services');
-            const colName = listeData.Service || listeData.Libelle || listeData.Nom || listeData.service || [];
-            services = colName.filter(s => s && s.trim()).sort();
-          } catch (e2) {
-            console.log('Table liste_services non trouvée');
-          }
-        }
+        // Récupérer la table des services
+        const tableAccess = await grist.selectedTable.create('liste_services');
+        const records = await tableAccess.fetchSelectedTable();
         
         const select = document.getElementById('service');
-        select.innerHTML = '<option value="">-- Sélectionnez votre service --</option>';
+        select.innerHTML = '<option value="">— Sélectionnez votre service —</option>';
         
-        if (services.length > 0) {
-          services.forEach((service) => {
+        if (records && records.length > 0) {
+          // Extraire la colonne Libellé et trier
+          const services = records
+            .map(r => r.Libellé || r.Libelle)
+            .filter(s => s && s.trim())
+            .sort();
+          
+          // Éliminer les doublons
+          const uniqueServices = [...new Set(services)];
+          
+          uniqueServices.forEach((service) => {
             const option = document.createElement('option');
             option.value = service;
             option.textContent = service;
             select.appendChild(option);
           });
-          console.log(`${services.length} services chargés depuis Grist`);
+          
+          console.log(`✅ ${uniqueServices.length} services chargés depuis Grist`);
         } else {
-          // Fallback liste statique
+          console.log('⚠️ Aucun service trouvé, chargement de la liste statique');
           chargerServicesStatiques();
         }
         
       } catch (error) {
-        console.log('Mode standalone - Liste services statique');
+        console.error('Erreur chargement services:', error);
+        console.log('🔄 Fallback: chargement de la liste statique');
         chargerServicesStatiques();
       }
     }
@@ -484,37 +485,51 @@
     function chargerServicesStatiques() {
       const select = document.getElementById('service');
       const servicesStatiques = [
-        "DGITM - Direction Générale des Infrastructures, des Transports et des Mobilités",
-        "DREAL Auvergne-Rhône-Alpes",
-        "DREAL Bourgogne-Franche-Comté",
-        "DREAL Bretagne",
-        "DREAL Centre-Val de Loire",
-        "DREAL Corse",
-        "DREAL Grand Est",
-        "DREAL Hauts-de-France",
-        "DREAL Île-de-France",
-        "DREAL Normandie",
-        "DREAL Nouvelle-Aquitaine",
-        "DREAL Occitanie",
-        "DREAL Pays de la Loire",
-        "DREAL Provence-Alpes-Côte d'Azur",
-        "DRAAF - Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt",
-        "DDT - Direction Départementale des Territoires",
-        "DDTM - Direction Départementale des Territoires et de la Mer",
+        "Services du Premier ministre",
+        "Ministère de l'Intérieur et des Outre-mer",
+        "Ministère de la Justice",
+        "Ministère des Armées",
+        "Ministère de l'Économie et des Finances",
+        "Ministère de l'Éducation nationale et de la Jeunesse",
+        "Ministère de l'Enseignement supérieur et de la Recherche",
+        "Ministère de l'Agriculture et de la Souveraineté alimentaire",
+        "Ministère de la Transition écologique",
+        "Ministère de la Santé et des Solidarités",
+        "Ministère de la Culture du travail et des solidarités",
+        "Direction régionale de l'économie de l'emploi, du travail et des solidarités",
+        "Direction régionale de l'environnement  de l'aménagement et du logement",
+        "Direction régionale de l'alimentation  de l'agriculture et de la forêt",
+        "Direction régionale des affaires culturelles",
+        "Rectorat d'académie",
+        "Agence régionale de santé",
+        "Direction départementale des territoires",
+        "Direction départementale des territoires et de la mer",
+        "Direction départementale de l'emploi  du travail et des solidarités",
+        "Direction départementale de la protection des populations",
+        "Direction dép. de l'emploi  du travail  des solidarités et de la protection des populations",
+        "Direction des services départementaux de l'éducation nationale",
+        "Direction départementale des finances publiques",
+        "Préfecture de département",
+        "Sous-préfecture",
         "France Travail",
-        "Préfecture",
-        "Autre service"
+        "Caisse d'Allocations Familiales",
+        "Caisse Primaire d'Assurance Maladie",
+        "Agence de l'environnement et de la maîtrise de l'énergie",
+        "Centre national de la recherche scientifique"
       ];
       
-      select.innerHTML = '<option value="">-- Sélectionnez votre service --</option>';
+      select.innerHTML = '<option value="">— Sélectionnez votre service —</option>';
       servicesStatiques.forEach((service) => {
         const option = document.createElement('option');
         option.value = service;
         option.textContent = service;
         select.appendChild(option);
       });
+      
+      console.log(`✅ ${servicesStatiques.length} services statiques chargés`);
     }
     
+    // Charger les services au démarrage
     chargerServices();
 
     // ═══════════════════════════════════════════════════════════════
