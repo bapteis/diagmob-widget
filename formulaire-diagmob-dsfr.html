@@ -199,6 +199,39 @@
             </label>
             <select class="fr-select" id="service" name="service" required>
               <option value="">— Sélectionnez votre service —</option>
+              <option value="Services du Premier ministre">Services du Premier ministre</option>
+              <option value="Ministère de l'Intérieur et des Outre-mer">Ministère de l'Intérieur et des Outre-mer</option>
+              <option value="Ministère de la Justice">Ministère de la Justice</option>
+              <option value="Ministère des Armées">Ministère des Armées</option>
+              <option value="Ministère de l'Économie et des Finances">Ministère de l'Économie et des Finances</option>
+              <option value="Ministère de l'Éducation nationale et de la Jeunesse">Ministère de l'Éducation nationale et de la Jeunesse</option>
+              <option value="Ministère de l'Enseignement supérieur et de la Recherche">Ministère de l'Enseignement supérieur et de la Recherche</option>
+              <option value="Ministère de l'Agriculture et de la Souveraineté alimentaire">Ministère de l'Agriculture et de la Souveraineté alimentaire</option>
+              <option value="Ministère de la Transition écologique">Ministère de la Transition écologique</option>
+              <option value="Ministère de la Santé et des Solidarités">Ministère de la Santé et des Solidarités</option>
+              <option value="Ministère de la Culture">Ministère de la Culture</option>
+              <option value="Ministère du Travail et des Solidarités">Ministère du Travail et des Solidarités</option>
+              <option value="Direction régionale de l'économie, de l'emploi, du travail et des solidarités">Direction régionale de l'économie, de l'emploi, du travail et des solidarités</option>
+              <option value="Direction régionale de l'environnement, de l'aménagement et du logement">Direction régionale de l'environnement, de l'aménagement et du logement</option>
+              <option value="Direction régionale de l'alimentation, de l'agriculture et de la forêt">Direction régionale de l'alimentation, de l'agriculture et de la forêt</option>
+              <option value="Direction régionale des affaires culturelles">Direction régionale des affaires culturelles</option>
+              <option value="Rectorat d'académie">Rectorat d'académie</option>
+              <option value="Agence régionale de santé">Agence régionale de santé</option>
+              <option value="Direction départementale des territoires">Direction départementale des territoires</option>
+              <option value="Direction départementale des territoires et de la mer">Direction départementale des territoires et de la mer</option>
+              <option value="Direction départementale de l'emploi, du travail et des solidarités">Direction départementale de l'emploi, du travail et des solidarités</option>
+              <option value="Direction départementale de la protection des populations">Direction départementale de la protection des populations</option>
+              <option value="Direction départementale de l'emploi, du travail, des solidarités et de la protection des populations">Direction départementale de l'emploi, du travail, des solidarités et de la protection des populations</option>
+              <option value="Direction des services départementaux de l'éducation nationale">Direction des services départementaux de l'éducation nationale</option>
+              <option value="Direction départementale des finances publiques">Direction départementale des finances publiques</option>
+              <option value="Préfecture de département">Préfecture de département</option>
+              <option value="Sous-préfecture">Sous-préfecture</option>
+              <option value="France Travail">France Travail</option>
+              <option value="Caisse d'Allocations Familiales">Caisse d'Allocations Familiales</option>
+              <option value="Caisse Primaire d'Assurance Maladie">Caisse Primaire d'Assurance Maladie</option>
+              <option value="Agence de l'environnement et de la maîtrise de l'énergie">Agence de l'environnement et de la maîtrise de l'énergie</option>
+              <option value="Centre national de la recherche scientifique">Centre national de la recherche scientifique</option>
+              <option value="Autre service">Autre service</option>
             </select>
           </div>
 
@@ -431,106 +464,7 @@
     // INITIALISATION GRIST
     // ═══════════════════════════════════════════════════════════════
     grist.ready();
-    
-    // Configuration Grist (à adapter selon ton document)
-    const GRIST_CONFIG = {
-      docId: 'votre_doc_id',  // ID de ton document Grist
-      tableServices: 'liste_services',  // Table contenant les services
-      colonneListe: 'Libellé'  // Colonne à afficher
-    };
-    
-    // Charger la liste des services depuis Grist
-    async function chargerServices() {
-      try {
-        // Attendre que Grist soit prêt
-        await grist.ready();
-        
-        // Récupérer la table des services
-        const tableAccess = await grist.selectedTable.create('liste_services');
-        const records = await tableAccess.fetchSelectedTable();
-        
-        const select = document.getElementById('service');
-        select.innerHTML = '<option value="">— Sélectionnez votre service —</option>';
-        
-        if (records && records.length > 0) {
-          // Extraire la colonne Libellé et trier
-          const services = records
-            .map(r => r.Libellé || r.Libelle)
-            .filter(s => s && s.trim())
-            .sort();
-          
-          // Éliminer les doublons
-          const uniqueServices = [...new Set(services)];
-          
-          uniqueServices.forEach((service) => {
-            const option = document.createElement('option');
-            option.value = service;
-            option.textContent = service;
-            select.appendChild(option);
-          });
-          
-          console.log(`✅ ${uniqueServices.length} services chargés depuis Grist`);
-        } else {
-          console.log('⚠️ Aucun service trouvé, chargement de la liste statique');
-          chargerServicesStatiques();
-        }
-        
-      } catch (error) {
-        console.error('Erreur chargement services:', error);
-        console.log('🔄 Fallback: chargement de la liste statique');
-        chargerServicesStatiques();
-      }
-    }
-    
-    function chargerServicesStatiques() {
-      const select = document.getElementById('service');
-      const servicesStatiques = [
-        "Services du Premier ministre",
-        "Ministère de l'Intérieur et des Outre-mer",
-        "Ministère de la Justice",
-        "Ministère des Armées",
-        "Ministère de l'Économie et des Finances",
-        "Ministère de l'Éducation nationale et de la Jeunesse",
-        "Ministère de l'Enseignement supérieur et de la Recherche",
-        "Ministère de l'Agriculture et de la Souveraineté alimentaire",
-        "Ministère de la Transition écologique",
-        "Ministère de la Santé et des Solidarités",
-        "Ministère de la Culture du travail et des solidarités",
-        "Direction régionale de l'économie de l'emploi, du travail et des solidarités",
-        "Direction régionale de l'environnement  de l'aménagement et du logement",
-        "Direction régionale de l'alimentation  de l'agriculture et de la forêt",
-        "Direction régionale des affaires culturelles",
-        "Rectorat d'académie",
-        "Agence régionale de santé",
-        "Direction départementale des territoires",
-        "Direction départementale des territoires et de la mer",
-        "Direction départementale de l'emploi  du travail et des solidarités",
-        "Direction départementale de la protection des populations",
-        "Direction dép. de l'emploi  du travail  des solidarités et de la protection des populations",
-        "Direction des services départementaux de l'éducation nationale",
-        "Direction départementale des finances publiques",
-        "Préfecture de département",
-        "Sous-préfecture",
-        "France Travail",
-        "Caisse d'Allocations Familiales",
-        "Caisse Primaire d'Assurance Maladie",
-        "Agence de l'environnement et de la maîtrise de l'énergie",
-        "Centre national de la recherche scientifique"
-      ];
-      
-      select.innerHTML = '<option value="">— Sélectionnez votre service —</option>';
-      servicesStatiques.forEach((service) => {
-        const option = document.createElement('option');
-        option.value = service;
-        option.textContent = service;
-        select.appendChild(option);
-      });
-      
-      console.log(`✅ ${servicesStatiques.length} services statiques chargés`);
-    }
-    
-    // Charger les services au démarrage
-    chargerServices();
+    console.log('✅ Grist initialisé - Formulaire prêt');
 
     // ═══════════════════════════════════════════════════════════════
     // QUESTIONS CONDITIONNELLES
@@ -696,10 +630,14 @@
         btn.disabled = true;
         btn.textContent = 'Envoi en cours...';
         
+        console.log('📤 Envoi vers Grist...', fields);
+        
         // Envoyer à Grist
         await grist.docApi.applyUserActions([
           ['AddRecord', 'DiagmobV2', null, fields]
         ]);
+        
+        console.log('✅ Données enregistrées');
         
         // Succès
         document.getElementById('success-message').style.display = 'block';
@@ -723,7 +661,7 @@
         }, 5000);
         
       } catch (error) {
-        console.error('Erreur soumission:', error);
+        console.error('❌ Erreur soumission:', error);
         alert('Erreur lors de l\'envoi. Veuillez réessayer.');
         
         const btn = document.getElementById('btn-submit');
