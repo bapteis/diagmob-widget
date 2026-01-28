@@ -137,7 +137,6 @@
     <div class="fr-mb-2w">
       <h1 class="fr-h3">📋 Diag Mob - Diagnostic Mobilité</h1>
       <p class="fr-text--sm fr-mb-0">
-        Vos réponses sont confidentielles et traitées selon le RGPD. 
         Les champs marqués d'un astérisque (*) sont obligatoires.
       </p>
     </div>
@@ -198,9 +197,10 @@
             <label class="fr-label" for="service">
               Service / Ministère de rattachement *
             </label>
-            <select class="fr-select" id="service" name="service" required size="1">
-              <option value="">-- Sélectionnez votre service --</option>
-              <!-- Options chargées dynamiquement depuis Grist -->
+            <select id="service" name="service" required 
+                data-grist-table="liste_services" 
+                data-grist-column="Libellé">
+              <option value="">— Sélectionnez votre service —</option>
             </select>
           </div>
 
