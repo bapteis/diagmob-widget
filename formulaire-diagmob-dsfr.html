@@ -11,6 +11,9 @@
   
   <!-- Grist API -->
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+
+  <!-- Polyline encoder (pour compacter les trajets GeoJSON) -->
+  <script src="https://unpkg.com/@mapbox/polyline@1.1.1/src/polyline.js"></script>
   
   <style>
     body {
@@ -500,8 +503,66 @@
     // ═══════════════════════════════════════════════════════════════
     const gpsData = {
       domicile: { lat: null, lon: null, label: '' },
-      travail: { lat: null, lon: null, label: '' }
+      travail: { lat: null, lon: null, label: '' },
+      route: {
+        distVoiture: 0,
+        dureeVoiture: 0,
+        polylineVoiture: '',
+        distVelo: 0,
+        dureeVelo: 0,
+        polylineVelo: ''
+      }
     };
+
+    // ═══════════════════════════════════════════════════════════════
+    // CALCUL AUTOMATIQUE DES TRAJETS (OSRM)
+    // ═══════════════════════════════════════════════════════════════
+    async function calcRoute() {
+      // Vérifier que les deux adresses sont saisies
+      if (!gpsData.domicile.lat || !gpsData.travail.lat) {
+        return;
+      }
+
+      const p1 = `${gpsData.domicile.lon},${gpsData.domicile.lat}`;
+      const p2 = `${gpsData.travail.lon},${gpsData.travail.lat}`;
+
+      try {
+        // 🚗 TRAJET VOITURE
+        const rCar = await fetch(`https://router.project-osrm.org/route/v1/driving/${p1};${p2}?overview=full&geometries=geojson`);
+        const jCar = await rCar.json();
+
+        if (jCar.routes?.[0]) {
+          gpsData.route.distVoiture = (jCar.routes[0].distance / 1000).toFixed(2);
+          gpsData.route.dureeVoiture = Math.round(jCar.routes[0].duration / 60);
+
+          // Encoder en polyline (90% plus compact que GeoJSON)
+          const coords = jCar.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); // Inverser lon,lat -> lat,lon
+          gpsData.route.polylineVoiture = polyline.encode(coords);
+
+          console.log('✅ Trajet voiture:', gpsData.route.distVoiture, 'km en', gpsData.route.dureeVoiture, 'min');
+        }
+
+        // 🚴 TRAJET VÉLO
+        const rBike = await fetch(`https://router.project-osrm.org/route/v1/cycling/${p1};${p2}?overview=full&geometries=geojson`);
+        const jBike = await rBike.json();
+
+        if (jBike.routes?.[0]) {
+          gpsData.route.distVelo = (jBike.routes[0].distance / 1000).toFixed(2);
+          gpsData.route.dureeVelo = Math.round(jBike.routes[0].duration / 60);
+
+          // Encoder en polyline
+          const coords = jBike.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+          gpsData.route.polylineVelo = polyline.encode(coords);
+
+          console.log('✅ Trajet vélo:', gpsData.route.distVelo, 'km en', gpsData.route.dureeVelo, 'min');
+        }
+
+        console.log('✅ Trajets calculés et encodés en polyline');
+
+      } catch (e) {
+        console.error('⚠️ Erreur calcul trajet:', e);
+      }
+    }
 
     function setupAutocomplete(inputId, suggestionsId, type) {
       const input = document.getElementById(inputId);
@@ -533,7 +594,7 @@
                   gpsData[type].lat = feature.geometry.coordinates[1];
                   gpsData[type].lon = feature.geometry.coordinates[0];
                   gpsData[type].label = feature.properties.label;
-                  
+
                   // Mettre à jour les champs cachés
                   if (type === 'domicile') {
                     document.getElementById('gps-dom-lat').value = gpsData[type].lat;
@@ -542,8 +603,11 @@
                     document.getElementById('gps-trav-lat').value = gpsData[type].lat;
                     document.getElementById('gps-trav-lon').value = gpsData[type].lon;
                   }
-                  
+
                   suggestions.style.display = 'none';
+
+                  // Calculer automatiquement les trajets en arrière-plan
+                  calcRoute();
                 });
                 suggestions.appendChild(div);
               });
@@ -621,7 +685,17 @@
         Jours_Site_Moyenne: parseInt(nbJoursSemaine),
         Jours_Presence: jours,
         Heure_Arrivee: document.getElementById('heure-arrivee').value,
-        Heure_Depart: document.getElementById('heure-depart').value
+        Heure_Depart: document.getElementById('heure-depart').value,
+
+        // 🚗 Données trajet voiture
+        Distance_Voiture_km: parseFloat(gpsData.route.distVoiture) || 0,
+        Temps_Voiture_min: gpsData.route.dureeVoiture || 0,
+        Trajet_Voiture_Polyline: gpsData.route.polylineVoiture || '',
+
+        // 🚴 Données trajet vélo
+        Distance_Velo_km: parseFloat(gpsData.route.distVelo) || 0,
+        Temps_Velo_min: gpsData.route.dureeVelo || 0,
+        Trajet_Velo_Polyline: gpsData.route.polylineVelo || ''
       };
       
       try {
