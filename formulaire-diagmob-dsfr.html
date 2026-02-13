@@ -507,9 +507,11 @@
       route: {
         distVoiture: 0,
         dureeVoiture: 0,
+        geojsonVoiture: '',
         polylineVoiture: '',
         distVelo: 0,
         dureeVelo: 0,
+        geojsonVelo: '',
         polylineVelo: ''
       }
     };
@@ -535,7 +537,10 @@
           gpsData.route.distVoiture = (jCar.routes[0].distance / 1000).toFixed(2);
           gpsData.route.dureeVoiture = Math.round(jCar.routes[0].duration / 60);
 
-          // Encoder en polyline (90% plus compact que GeoJSON)
+          // Stocker le GeoJSON complet (pour debug/analyse)
+          gpsData.route.geojsonVoiture = JSON.stringify(jCar.routes[0].geometry);
+
+          // Encoder en polyline (pour URLs courtes)
           const coords = jCar.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); // Inverser lon,lat -> lat,lon
           gpsData.route.polylineVoiture = polyline.encode(coords);
 
@@ -550,7 +555,10 @@
           gpsData.route.distVelo = (jBike.routes[0].distance / 1000).toFixed(2);
           gpsData.route.dureeVelo = Math.round(jBike.routes[0].duration / 60);
 
-          // Encoder en polyline
+          // Stocker le GeoJSON complet (pour debug/analyse)
+          gpsData.route.geojsonVelo = JSON.stringify(jBike.routes[0].geometry);
+
+          // Encoder en polyline (pour URLs courtes)
           const coords = jBike.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
           gpsData.route.polylineVelo = polyline.encode(coords);
 
@@ -690,11 +698,13 @@
         // 🚗 Données trajet voiture
         Distance_Voiture_km: parseFloat(gpsData.route.distVoiture) || 0,
         Temps_Voiture_min: gpsData.route.dureeVoiture || 0,
+        Trajet_Voiture_GeoJSON: gpsData.route.geojsonVoiture || '',
         Trajet_Voiture_Polyline: gpsData.route.polylineVoiture || '',
 
         // 🚴 Données trajet vélo
         Distance_Velo_km: parseFloat(gpsData.route.distVelo) || 0,
         Temps_Velo_min: gpsData.route.dureeVelo || 0,
+        Trajet_Velo_GeoJSON: gpsData.route.geojsonVelo || '',
         Trajet_Velo_Polyline: gpsData.route.polylineVelo || ''
       };
       
