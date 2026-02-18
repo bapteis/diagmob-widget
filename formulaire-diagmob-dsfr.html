@@ -9,8 +9,12 @@
   <link rel="stylesheet" href="https://unpkg.com/@gouvfr/dsfr@1.11.2/dist/dsfr.min.css">
   <link rel="stylesheet" href="https://unpkg.com/@gouvfr/dsfr@1.11.2/dist/utility/utility.min.css">
   
-  <!-- Grist API -->
-  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <!-- Config Grist (envoi direct via API REST, sans plugin) -->
+  <script>
+    const GRIST_SERVER = 'https://grist.incubateur.dnum.din.developpement-durable.gouv.fr';
+    const GRIST_DOC_ID = 'cfiCVUp2f85MBLuwwzUiGV';
+    const GRIST_TABLE = 'DiagmobV2';
+  </script>
 
   <!-- Polyline encoder (pour compacter les trajets GeoJSON) -->
   <script src="https://unpkg.com/@mapbox/polyline@1.1.1/src/polyline.js"></script>
@@ -134,11 +138,20 @@
 </head>
 <body>
 
+  <!-- Header avec Marianne et logo -->
+  <div style="background: white; padding: 1rem 1.5rem; border-bottom: 3px solid #000091; display: flex; align-items: center; gap: 1.5rem;">
+    <img src="https://img.mailinblue.com/10358918/images/content_library/original/696fa50ad791ce62a128b0b7.png" alt="Marianne - Logo" height="80" style="max-height: 80px; width: auto;">
+    <div>
+      <p style="margin: 0; font-size: 1.1em; font-weight: bold; color: #000091;">Diag'Mob</p>
+      <p style="margin: 0; font-size: 0.85em; color: #666;">Diagnostic Mobilité Domicile-Travail</p>
+    </div>
+  </div>
+
   <div class="container-formulaire">
-    
+
     <!-- En-tête -->
     <div class="fr-mb-2w">
-      <h1 class="fr-h3">📋 Diag Mob - Diagnostic Mobilité</h1>
+      <h1 class="fr-h3">Diag Mob - Diagnostic Mobilité</h1>
       <p class="fr-text--sm fr-mb-0">
         Les champs marqués d'un astérisque (*) sont obligatoires.
       </p>
@@ -464,10 +477,9 @@
 
   <script>
     // ═══════════════════════════════════════════════════════════════
-    // INITIALISATION GRIST
+    // FORMULAIRE STANDALONE (envoi direct via API REST Grist)
     // ═══════════════════════════════════════════════════════════════
-    grist.ready();
-    console.log('✅ Grist initialisé - Formulaire prêt');
+    console.log('✅ Formulaire standalone prêt');
 
     // ═══════════════════════════════════════════════════════════════
     // QUESTIONS CONDITIONNELLES
@@ -715,11 +727,21 @@
         btn.textContent = 'Envoi en cours...';
         
         console.log('📤 Envoi vers Grist...', fields);
-        
-        // Envoyer à Grist
-        await grist.docApi.applyUserActions([
-          ['AddRecord', 'DiagmobV2', null, fields]
-        ]);
+
+        // Envoyer directement via API REST Grist (sans clé API = anonyme, autorisé par Access Rules)
+        const response = await fetch(
+          `${GRIST_SERVER}/api/docs/${GRIST_DOC_ID}/tables/${GRIST_TABLE}/records`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ records: [{ fields }] })
+          }
+        );
+
+        if (!response.ok) {
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody.error || `Erreur API: ${response.status}`);
+        }
         
         console.log('✅ Données enregistrées');
         
