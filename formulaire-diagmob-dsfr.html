@@ -172,10 +172,12 @@
       </ul>
     </div>
 
-    <!-- Message succès -->
-    <div class="success-message fr-alert fr-alert--success" id="success-message">
-      <p class="fr-alert__title">Merci !</p>
-      <p>Votre diagnostic mobilité a bien été enregistré.</p>
+    <!-- Message succès (affiché à la place du formulaire) -->
+    <div id="success-message" style="display:none; padding: 2rem 0;">
+      <div class="fr-alert fr-alert--success fr-mb-3w">
+        <p class="fr-alert__title">Merci pour votre participation !</p>
+        <p>Votre diagnostic mobilité a bien été enregistré. Vous devriez recevoir un premier mail de bilan prochainement.</p>
+      </div>
     </div>
 
     <form id="diagmob-form">
@@ -558,7 +560,7 @@
       const joursJusquLundi = jour === 1 ? 7 : (8 - jour) % 7 || 7;
       d.setDate(d.getDate() + joursJusquLundi);
       d.setHours(8, 0, 0, 0);
-      return d.toISOString().slice(0, 16);
+      return d.toISOString().slice(0, 19); // format requis: 2026-02-23T07:00:00
     }
 
     async function calcRoute() {
@@ -596,9 +598,8 @@
               [parseFloat(gpsData.domicile.lon), parseFloat(gpsData.domicile.lat)],
               [parseFloat(gpsData.travail.lon), parseFloat(gpsData.travail.lat)]
             ],
-            extra_info: ['surface', 'waytype', 'steepness']
-            // Note : elevation retiré car cause erreur 400 sur l'endpoint /geojson
-            // ascent/descent sont toujours disponibles dans summary
+            extra_info: ['surface', 'waytype', 'steepness'],
+            elevation: true  // nécessaire pour obtenir ascent/descent dans le summary
           })
         });
 
@@ -784,6 +785,7 @@
       }
 
       const fields = {
+        Consentement_RGPD: true,  // obligatoire (validé avant soumission)
         Email_Pro: email,
         Service: service,
         Telephone: telephone,
@@ -846,27 +848,10 @@
         }
         
         console.log('✅ Données enregistrées');
-        
-        // Succès
+
+        // Masquer le formulaire, afficher le message de confirmation en place
+        document.getElementById('diagmob-form').style.display = 'none';
         document.getElementById('success-message').style.display = 'block';
-        document.getElementById('diagmob-form').reset();
-        
-        // Réinitialiser les questions conditionnelles
-        questionParking.classList.remove('visible');
-        questionMentorVelo.classList.remove('visible');
-        
-        // Réinitialiser les données GPS
-        gpsData.domicile = { lat: null, lon: null, label: '' };
-        gpsData.travail = { lat: null, lon: null, label: '' };
-        
-        // Scroll vers le haut pour voir le message
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        setTimeout(() => {
-          document.getElementById('success-message').style.display = 'none';
-          btn.disabled = false;
-          btn.textContent = 'Envoyer mon diagnostic';
-        }, 5000);
         
       } catch (error) {
         console.error('❌ Erreur soumission:', error);
