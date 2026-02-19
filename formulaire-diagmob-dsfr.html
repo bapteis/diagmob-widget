@@ -592,42 +592,52 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY },
           body: JSON.stringify({
-            coordinates: [[gpsData.domicile.lon, gpsData.domicile.lat], [gpsData.travail.lon, gpsData.travail.lat]],
-            elevation: true,
+            coordinates: [
+              [parseFloat(gpsData.domicile.lon), parseFloat(gpsData.domicile.lat)],
+              [parseFloat(gpsData.travail.lon), parseFloat(gpsData.travail.lat)]
+            ],
             extra_info: ['surface', 'waytype', 'steepness']
+            // Note : elevation retiré car cause erreur 400 sur l'endpoint /geojson
+            // ascent/descent sont toujours disponibles dans summary
           })
         });
-        const jBike = await rBike.json();
 
-        if (jBike.error) {
-          console.error('❌ ORS erreur:', jBike.error.message || jBike.error);
-        } else if (jBike.features?.[0]) {
-          const route = jBike.features[0];
-          const summary = route.properties.summary;
-          gpsData.route.distVelo = (summary.distance / 1000).toFixed(2);
-          gpsData.route.dureeVelo = Math.round(summary.duration / 60);
-          gpsData.route.denivelePositif = Math.round(summary.ascent || 0);
-          gpsData.route.deniveleNegatif = Math.round(summary.descent || 0);
-          const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-          gpsData.route.polylineVelo = polyline.encode(coords);
-
-          const extras = route.properties.extras || {};
-          gpsData.route.surfaces = formatExtraInfo(extras.surface, {
-            0:'Inconnu', 1:'Revêtu', 2:'Non revêtu', 3:'Asphalte', 4:'Béton',
-            5:'Pavés', 6:'Métal', 7:'Bois', 8:'Graviers compactés', 9:'Graviers fins',
-            10:'Gravier', 11:'Terre', 12:'Boue', 13:'Neige/Glace', 14:'Dalles',
-            15:'Sable', 16:'Copeaux', 17:'Herbe', 18:'Gazon'
-          });
-          gpsData.route.typesVoies = formatExtraInfo(extras.waytype, {
-            0:'Inconnu', 1:'Route nationale', 2:'Route secondaire', 3:'Rue locale',
-            4:'Chemin', 5:'Piste', 6:'Piste cyclable', 7:'Voie piétonne',
-            8:'Escalier', 9:'Ferry', 10:'En construction'
-          });
-          console.log('✅ Vélo (ORS/' + orsVeloProfil + '):', gpsData.route.distVelo, 'km,', gpsData.route.dureeVelo, 'min,', '+' + gpsData.route.denivelePositif + 'm');
-          console.log('   Surfaces:', gpsData.route.surfaces);
-          console.log('   Voies:', gpsData.route.typesVoies);
+        if (!rBike.ok) {
+          const errText = await rBike.text();
+          console.error(`❌ ORS erreur HTTP ${rBike.status}:`, errText);
         } else {
-          console.error('❌ ORS: réponse inattendue', jBike);
+          const jBike = await rBike.json();
+
+          if (jBike.error) {
+            console.error('❌ ORS erreur:', jBike.error.message || jBike.error);
+          } else if (jBike.features?.[0]) {
+            const route = jBike.features[0];
+            const summary = route.properties.summary;
+            gpsData.route.distVelo = (summary.distance / 1000).toFixed(2);
+            gpsData.route.dureeVelo = Math.round(summary.duration / 60);
+            gpsData.route.denivelePositif = Math.round(summary.ascent || 0);
+            gpsData.route.deniveleNegatif = Math.round(summary.descent || 0);
+            const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+            gpsData.route.polylineVelo = polyline.encode(coords);
+
+            const extras = route.properties.extras || {};
+            gpsData.route.surfaces = formatExtraInfo(extras.surface, {
+              0:'Inconnu', 1:'Revêtu', 2:'Non revêtu', 3:'Asphalte', 4:'Béton',
+              5:'Pavés', 6:'Métal', 7:'Bois', 8:'Graviers compactés', 9:'Graviers fins',
+              10:'Gravier', 11:'Terre', 12:'Boue', 13:'Neige/Glace', 14:'Dalles',
+              15:'Sable', 16:'Copeaux', 17:'Herbe', 18:'Gazon'
+            });
+            gpsData.route.typesVoies = formatExtraInfo(extras.waytype, {
+              0:'Inconnu', 1:'Route nationale', 2:'Route secondaire', 3:'Rue locale',
+              4:'Chemin', 5:'Piste', 6:'Piste cyclable', 7:'Voie piétonne',
+              8:'Escalier', 9:'Ferry', 10:'En construction'
+            });
+            console.log('✅ Vélo (ORS/' + orsVeloProfil + '):', gpsData.route.distVelo, 'km,', gpsData.route.dureeVelo, 'min, +' + gpsData.route.denivelePositif + 'm');
+            console.log('   Surfaces:', gpsData.route.surfaces);
+            console.log('   Voies:', gpsData.route.typesVoies);
+          } else {
+            console.error('❌ ORS: réponse inattendue', jBike);
+          }
         }
       } catch (e) {
         console.error('❌ Erreur calcul vélo (ORS):', e);
@@ -645,13 +655,14 @@
         tcUrl.searchParams.set('postTransitModes', 'WALK');
         tcUrl.searchParams.set('maxTransfers', '4');
 
-        const rTC = await fetch(tcUrl, {
-          headers: { 'User-Agent': 'DiagMob/1.0 (diagmob@developpement-durable.gouv.fr)' }
-        });
+        const rTC = await fetch(tcUrl);
         const jTC = await rTC.json();
+        console.log('🚌 TC réponse brute:', JSON.stringify(jTC).slice(0, 300));
 
-        if (jTC.itineraries?.[0]) {
-          const best = jTC.itineraries[0];
+        // Transitous/MOTIS retourne le format OTP : { plan: { itineraries: [...] } }
+        const itineraries = jTC.itineraries || jTC.plan?.itineraries;
+        if (itineraries?.[0]) {
+          const best = itineraries[0];
           gpsData.route.dureeTc = Math.round(best.duration / 60);
           gpsData.route.correspondancesTc = best.transfers || 0;
           const modes = [...new Set(best.legs.filter(l => l.mode !== 'WALK').map(l => l.mode))];
