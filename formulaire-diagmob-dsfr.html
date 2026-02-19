@@ -521,19 +521,14 @@
       domicile: { lat: null, lon: null, label: '' },
       travail: { lat: null, lon: null, label: '' },
       route: {
-        distVoiture: 0,
-        dureeVoiture: 0,
-        geojsonVoiture: '',
-        polylineVoiture: '',
-        distVelo: 0,
-        dureeVelo: 0,
-        geojsonVelo: '',
-        polylineVelo: '',
-        // Données vélo enrichies (OpenRouteService)
-        denivelePositif: 0,
-        deniveleNegatif: 0,
-        surfaces: '',       // ex: "asphalte 60%, gravier 30%, terre 10%"
-        typesVoies: ''      // ex: "route 45%, piste cyclable 35%, chemin 20%"
+        // Voiture (OSRM)
+        distVoiture: 0, dureeVoiture: 0, polylineVoiture: '',
+        // Vélo (ORS)
+        distVelo: 0, dureeVelo: 0, polylineVelo: '',
+        denivelePositif: 0, deniveleNegatif: 0,
+        surfaces: '', typesVoies: '',
+        // Transports en commun (Transitous)
+        dureeTc: 0, correspondancesTc: 0, modesTc: ''
       }
     };
 
@@ -541,15 +536,14 @@
     // CALCUL AUTOMATIQUE DES TRAJETS (OSRM voiture + ORS vélo)
     // ═══════════════════════════════════════════════════════════════
 
-    // Convertit les extra_info ORS en texte lisible ("Bitume 65%, Gravier 20%, ...")
-    function formatExtraInfo(extraData, totalDist, labels) {
+    // Convertit les extra_info ORS en texte lisible ("Asphalte 65%, Gravier 20%, ...")
+    function formatExtraInfo(extraData, labels) {
       if (!extraData?.values) return '';
       const segments = {};
-      for (const [startIdx, endIdx, typeCode] of extraData.values) {
+      for (const [, , typeCode] of extraData.values) {
         const label = labels[typeCode] || `Type ${typeCode}`;
         segments[label] = (segments[label] || 0) + 1;
       }
-      // Calculer les pourcentages
       const total = Object.values(segments).reduce((a, b) => a + b, 0);
       return Object.entries(segments)
         .sort((a, b) => b[1] - a[1])
@@ -557,99 +551,120 @@
         .join(', ');
     }
 
+    // Prochain lundi à 8h pour le calcul TC (heure de référence)
+    function prochainLundiMatin() {
+      const d = new Date();
+      const jour = d.getDay(); // 0=dim, 1=lun...
+      const joursJusquLundi = jour === 1 ? 7 : (8 - jour) % 7 || 7;
+      d.setDate(d.getDate() + joursJusquLundi);
+      d.setHours(8, 0, 0, 0);
+      return d.toISOString().slice(0, 16);
+    }
+
     async function calcRoute() {
-      // Vérifier que les deux adresses sont saisies
-      if (!gpsData.domicile.lat || !gpsData.travail.lat) {
-        return;
-      }
+      if (!gpsData.domicile.lat || !gpsData.travail.lat) return;
 
       const p1 = `${gpsData.domicile.lon},${gpsData.domicile.lat}`;
       const p2 = `${gpsData.travail.lon},${gpsData.travail.lat}`;
 
+      // Profil vélo selon le mode sélectionné (VAE ou classique)
+      const modeSelectionne = document.querySelector('input[name="transport"]:checked')?.value || '';
+      const orsVeloProfil = modeSelectionne === 'Vélo électrique' ? 'cycling-electric' : 'cycling-regular';
+
+      // ─── 1. VOITURE (OSRM) ───────────────────────────────────────
       try {
-        // 🚗 TRAJET VOITURE
         const rCar = await fetch(`https://router.project-osrm.org/route/v1/driving/${p1};${p2}?overview=full&geometries=geojson`);
         const jCar = await rCar.json();
-
         if (jCar.routes?.[0]) {
           gpsData.route.distVoiture = (jCar.routes[0].distance / 1000).toFixed(2);
           gpsData.route.dureeVoiture = Math.round(jCar.routes[0].duration / 60);
-
-          // Stocker le GeoJSON complet (pour debug/analyse)
-          gpsData.route.geojsonVoiture = JSON.stringify(jCar.routes[0].geometry);
-
-          // Encoder en polyline (pour URLs courtes)
-          const coords = jCar.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); // Inverser lon,lat -> lat,lon
+          const coords = jCar.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
           gpsData.route.polylineVoiture = polyline.encode(coords);
-
-          console.log('✅ Trajet voiture:', gpsData.route.distVoiture, 'km en', gpsData.route.dureeVoiture, 'min');
+          console.log('✅ Voiture:', gpsData.route.distVoiture, 'km,', gpsData.route.dureeVoiture, 'min');
         }
+      } catch (e) {
+        console.error('❌ Erreur calcul voiture (OSRM):', e);
+      }
 
-        // 🚴 TRAJET VÉLO (OpenRouteService - données enrichies)
-        const rBike = await fetch('https://api.openrouteservice.org/v2/directions/cycling-regular/geojson', {
+      // ─── 2. VÉLO (OpenRouteService) ──────────────────────────────
+      try {
+        const rBike = await fetch(`https://api.openrouteservice.org/v2/directions/${orsVeloProfil}/geojson`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': ORS_API_KEY
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY },
           body: JSON.stringify({
-            coordinates: [
-              [gpsData.domicile.lon, gpsData.domicile.lat],
-              [gpsData.travail.lon, gpsData.travail.lat]
-            ],
+            coordinates: [[gpsData.domicile.lon, gpsData.domicile.lat], [gpsData.travail.lon, gpsData.travail.lat]],
             elevation: true,
-            extra_info: ['surface', 'waytypes', 'steepness']
+            extra_info: ['surface', 'waytype', 'steepness']
           })
         });
         const jBike = await rBike.json();
 
-        if (jBike.features?.[0]) {
+        if (jBike.error) {
+          console.error('❌ ORS erreur:', jBike.error.message || jBike.error);
+        } else if (jBike.features?.[0]) {
           const route = jBike.features[0];
           const summary = route.properties.summary;
-
           gpsData.route.distVelo = (summary.distance / 1000).toFixed(2);
           gpsData.route.dureeVelo = Math.round(summary.duration / 60);
-
-          // Dénivelé (depuis elevation)
           gpsData.route.denivelePositif = Math.round(summary.ascent || 0);
           gpsData.route.deniveleNegatif = Math.round(summary.descent || 0);
-
-          // Stocker le GeoJSON complet
-          gpsData.route.geojsonVelo = JSON.stringify(route.geometry);
-
-          // Encoder en polyline
           const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
           gpsData.route.polylineVelo = polyline.encode(coords);
 
-          // Extraire les types de surface
-          const extraInfo = route.properties.extras || {};
-          if (extraInfo.surface) {
-            gpsData.route.surfaces = formatExtraInfo(extraInfo.surface, summary.distance, {
-              0: 'Inconnu', 1: 'Bitume', 2: 'Gravier', 3: 'Terre',
-              4: 'Sable', 5: 'Bois', 6: 'Métal', 7: 'Pavés',
-              8: 'Compacté', 9: 'Herbe', 10: 'Béton'
-            });
-          }
-
-          // Extraire les types de voies
-          if (extraInfo.waytypes) {
-            gpsData.route.typesVoies = formatExtraInfo(extraInfo.waytypes, summary.distance, {
-              0: 'Inconnu', 1: 'Route nationale', 2: 'Route départementale',
-              3: 'Route locale', 4: 'Piste cyclable', 5: 'Chemin',
-              6: 'Escalier', 7: 'Ferry', 8: 'Rue piétonne'
-            });
-          }
-
-          console.log('✅ Trajet vélo (ORS):', gpsData.route.distVelo, 'km en', gpsData.route.dureeVelo, 'min');
-          console.log('   Dénivelé: +' + gpsData.route.denivelePositif + 'm / -' + gpsData.route.deniveleNegatif + 'm');
+          const extras = route.properties.extras || {};
+          gpsData.route.surfaces = formatExtraInfo(extras.surface, {
+            0:'Inconnu', 1:'Revêtu', 2:'Non revêtu', 3:'Asphalte', 4:'Béton',
+            5:'Pavés', 6:'Métal', 7:'Bois', 8:'Graviers compactés', 9:'Graviers fins',
+            10:'Gravier', 11:'Terre', 12:'Boue', 13:'Neige/Glace', 14:'Dalles',
+            15:'Sable', 16:'Copeaux', 17:'Herbe', 18:'Gazon'
+          });
+          gpsData.route.typesVoies = formatExtraInfo(extras.waytype, {
+            0:'Inconnu', 1:'Route nationale', 2:'Route secondaire', 3:'Rue locale',
+            4:'Chemin', 5:'Piste', 6:'Piste cyclable', 7:'Voie piétonne',
+            8:'Escalier', 9:'Ferry', 10:'En construction'
+          });
+          console.log('✅ Vélo (ORS/' + orsVeloProfil + '):', gpsData.route.distVelo, 'km,', gpsData.route.dureeVelo, 'min,', '+' + gpsData.route.denivelePositif + 'm');
           console.log('   Surfaces:', gpsData.route.surfaces);
           console.log('   Voies:', gpsData.route.typesVoies);
+        } else {
+          console.error('❌ ORS: réponse inattendue', jBike);
         }
-
-        console.log('✅ Trajets calculés et encodés en polyline');
-
       } catch (e) {
-        console.error('⚠️ Erreur calcul trajet:', e);
+        console.error('❌ Erreur calcul vélo (ORS):', e);
+      }
+
+      // ─── 3. TRANSPORTS EN COMMUN (Transitous/MOTIS) ───────────────
+      try {
+        const heureRef = prochainLundiMatin();
+        const tcUrl = new URL('https://api.transitous.org/api/v5/plan');
+        tcUrl.searchParams.set('fromPlace', `${gpsData.domicile.lat},${gpsData.domicile.lon}`);
+        tcUrl.searchParams.set('toPlace', `${gpsData.travail.lat},${gpsData.travail.lon}`);
+        tcUrl.searchParams.set('time', heureRef);
+        tcUrl.searchParams.set('transitModes', 'BUS,TRAM,SUBWAY,RAIL,FERRY');
+        tcUrl.searchParams.set('preTransitModes', 'WALK');
+        tcUrl.searchParams.set('postTransitModes', 'WALK');
+        tcUrl.searchParams.set('maxTransfers', '4');
+
+        const rTC = await fetch(tcUrl, {
+          headers: { 'User-Agent': 'DiagMob/1.0 (diagmob@developpement-durable.gouv.fr)' }
+        });
+        const jTC = await rTC.json();
+
+        if (jTC.itineraries?.[0]) {
+          const best = jTC.itineraries[0];
+          gpsData.route.dureeTc = Math.round(best.duration / 60);
+          gpsData.route.correspondancesTc = best.transfers || 0;
+          const modes = [...new Set(best.legs.filter(l => l.mode !== 'WALK').map(l => l.mode))];
+          gpsData.route.modesTc = modes.map(m => ({
+            BUS:'Bus', TRAM:'Tramway', SUBWAY:'Métro',
+            RAIL:'Train/RER', FERRY:'Ferry', CABLE_CAR:'Téléphérique'
+          }[m] || m)).join(', ');
+          console.log('✅ TC (Transitous):', gpsData.route.dureeTc, 'min,', gpsData.route.correspondancesTc, 'correspondance(s):', gpsData.route.modesTc);
+        } else {
+          console.warn('⚠️ TC: aucun itinéraire trouvé (zone peut-être non couverte)');
+        }
+      } catch (e) {
+        console.error('❌ Erreur calcul TC (Transitous):', e);
       }
     }
 
@@ -788,7 +803,12 @@
         Denivele_Positif_m: gpsData.route.denivelePositif || 0,
         Denivele_Negatif_m: gpsData.route.deniveleNegatif || 0,
         Surfaces_Velo: gpsData.route.surfaces || '',
-        Types_Voies_Velo: gpsData.route.typesVoies || ''
+        Types_Voies_Velo: gpsData.route.typesVoies || '',
+
+        // 🚌 Transports en commun (Transitous)
+        Temps_TC_min: gpsData.route.dureeTc || 0,
+        Correspondances_TC: gpsData.route.correspondancesTc || 0,
+        Modes_TC: gpsData.route.modesTc || ''
       };
       
       try {
