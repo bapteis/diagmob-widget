@@ -560,7 +560,7 @@
       const joursJusquLundi = jour === 1 ? 7 : (8 - jour) % 7 || 7;
       d.setDate(d.getDate() + joursJusquLundi);
       d.setHours(8, 0, 0, 0);
-      return d.toISOString().slice(0, 19); // format requis: 2026-02-23T07:00:00
+      return d.getTime(); // Unix timestamp en millisecondes (requis par l'API Transitous)
     }
 
     async function calcRoute() {
@@ -616,9 +616,20 @@
             const summary = route.properties.summary;
             gpsData.route.distVelo = (summary.distance / 1000).toFixed(2);
             gpsData.route.dureeVelo = Math.round(summary.duration / 60);
-            gpsData.route.denivelePositif = Math.round(summary.ascent || 0);
-            gpsData.route.deniveleNegatif = Math.round(summary.descent || 0);
-            const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+            // Dénivelé : ORS /geojson ne met pas ascent/descent dans summary,
+            // on calcule depuis les coordonnées 3D [lon, lat, alt] quand elevation:true
+            const rawCoords = route.geometry.coordinates;
+            let denivelePos = 0, deniveleNeg = 0;
+            if (rawCoords.length > 1 && rawCoords[0].length === 3) {
+              for (let i = 1; i < rawCoords.length; i++) {
+                const diff = rawCoords[i][2] - rawCoords[i - 1][2];
+                if (diff > 0) denivelePos += diff;
+                else deniveleNeg += Math.abs(diff);
+              }
+            }
+            gpsData.route.denivelePositif = Math.round(summary.ascent || denivelePos);
+            gpsData.route.deniveleNegatif = Math.round(summary.descent || deniveleNeg);
+            const coords = rawCoords.map(c => [c[1], c[0]]); // [lat, lon] pour polyline (altitude ignorée)
             gpsData.route.polylineVelo = polyline.encode(coords);
 
             const extras = route.properties.extras || {};
