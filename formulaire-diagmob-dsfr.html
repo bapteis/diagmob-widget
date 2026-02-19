@@ -553,14 +553,17 @@
         .join(', ');
     }
 
-    // Prochain lundi à 8h pour le calcul TC (heure de référence)
+    // Prochain lundi à 8h pour le calcul TC
+    // Retourne { date: "YYYY-MM-DD", time: "08:00:00" } (format OTP/Transitous)
     function prochainLundiMatin() {
       const d = new Date();
       const jour = d.getDay(); // 0=dim, 1=lun...
       const joursJusquLundi = jour === 1 ? 7 : (8 - jour) % 7 || 7;
       d.setDate(d.getDate() + joursJusquLundi);
-      d.setHours(8, 0, 0, 0);
-      return d.getTime(); // Unix timestamp en millisecondes (requis par l'API Transitous)
+      const year  = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day   = String(d.getDate()).padStart(2, '0');
+      return { date: `${year}-${month}-${day}`, time: '08:00:00' };
     }
 
     async function calcRoute() {
@@ -590,7 +593,9 @@
 
       // ─── 2. VÉLO (OpenRouteService) ──────────────────────────────
       try {
-        const rBike = await fetch(`https://api.openrouteservice.org/v2/directions/${orsVeloProfil}/geojson`, {
+        // Endpoint /json (pas /geojson) : fournit summary.ascent/descent précis
+        // et retourne geometry comme polyline déjà encodée
+        const rBike = await fetch(`https://api.openrouteservice.org/v2/directions/${orsVeloProfil}/json`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': ORS_API_KEY },
           body: JSON.stringify({
@@ -599,7 +604,7 @@
               [parseFloat(gpsData.travail.lon), parseFloat(gpsData.travail.lat)]
             ],
             extra_info: ['surface', 'waytype', 'steepness'],
-            elevation: true  // nécessaire pour obtenir ascent/descent dans le summary
+            elevation: true
           })
         });
 
@@ -611,28 +616,18 @@
 
           if (jBike.error) {
             console.error('❌ ORS erreur:', jBike.error.message || jBike.error);
-          } else if (jBike.features?.[0]) {
-            const route = jBike.features[0];
-            const summary = route.properties.summary;
+          } else if (jBike.routes?.[0]) {
+            const route = jBike.routes[0];
+            const summary = route.summary;
             gpsData.route.distVelo = (summary.distance / 1000).toFixed(2);
             gpsData.route.dureeVelo = Math.round(summary.duration / 60);
-            // Dénivelé : ORS /geojson ne met pas ascent/descent dans summary,
-            // on calcule depuis les coordonnées 3D [lon, lat, alt] quand elevation:true
-            const rawCoords = route.geometry.coordinates;
-            let denivelePos = 0, deniveleNeg = 0;
-            if (rawCoords.length > 1 && rawCoords[0].length === 3) {
-              for (let i = 1; i < rawCoords.length; i++) {
-                const diff = rawCoords[i][2] - rawCoords[i - 1][2];
-                if (diff > 0) denivelePos += diff;
-                else deniveleNeg += Math.abs(diff);
-              }
-            }
-            gpsData.route.denivelePositif = Math.round(summary.ascent || denivelePos);
-            gpsData.route.deniveleNegatif = Math.round(summary.descent || deniveleNeg);
-            const coords = rawCoords.map(c => [c[1], c[0]]); // [lat, lon] pour polyline (altitude ignorée)
-            gpsData.route.polylineVelo = polyline.encode(coords);
+            // ascent/descent calculés proprement par ORS (pas de bruit DEM)
+            gpsData.route.denivelePositif = Math.round(summary.ascent || 0);
+            gpsData.route.deniveleNegatif = Math.round(summary.descent || 0);
+            // geometry = polyline déjà encodée (format Google/Mapbox standard)
+            gpsData.route.polylineVelo = route.geometry;
 
-            const extras = route.properties.extras || {};
+            const extras = route.extras || {};
             gpsData.route.surfaces = formatExtraInfo(extras.surface, {
               0:'Inconnu', 1:'Revêtu', 2:'Non revêtu', 3:'Asphalte', 4:'Béton',
               5:'Pavés', 6:'Métal', 7:'Bois', 8:'Graviers compactés', 9:'Graviers fins',
@@ -657,11 +652,12 @@
 
       // ─── 3. TRANSPORTS EN COMMUN (Transitous/MOTIS) ───────────────
       try {
-        const heureRef = prochainLundiMatin();
+        const { date: tcDate, time: tcTime } = prochainLundiMatin();
         const tcUrl = new URL('https://api.transitous.org/api/v5/plan');
         tcUrl.searchParams.set('fromPlace', `${gpsData.domicile.lat},${gpsData.domicile.lon}`);
         tcUrl.searchParams.set('toPlace', `${gpsData.travail.lat},${gpsData.travail.lon}`);
-        tcUrl.searchParams.set('time', heureRef);
+        tcUrl.searchParams.set('date', tcDate);   // ex: "2026-02-23"
+        tcUrl.searchParams.set('time', tcTime);   // "08:00:00"
         tcUrl.searchParams.set('transitModes', 'BUS,TRAM,SUBWAY,RAIL,FERRY');
         tcUrl.searchParams.set('preTransitModes', 'WALK');
         tcUrl.searchParams.set('postTransitModes', 'WALK');
