@@ -567,8 +567,10 @@
         distVelo: 0, dureeVelo: 0, polylineVelo: '',
         denivelePositif: 0, deniveleNegatif: 0,
         surfaces: '', typesVoies: '',
-        // Transports en commun (Transitous)
-        dureeTc: 0, correspondancesTc: 0, modesTc: ''
+        // Transports en commun (Transitous) — marche à pied
+        dureeTc: 0, correspondancesTc: 0, modesTc: '',
+        // Transports en commun (Transitous) — intermodalité vélo + TC
+        dureeTcVelo: 0, correspondancesTcVelo: 0, modesTcVelo: ''
       }
     };
 
@@ -728,6 +730,40 @@
       } catch (e) {
         console.error('❌ Erreur calcul TC (Transitous):', e);
       }
+
+      // ─── 4. INTERMODALITÉ VÉLO + TC (Transitous/MOTIS) ─────────────
+      try {
+        const tcDatetime = prochainLundiMatin();
+        const tcVeloUrl = new URL('https://api.transitous.org/api/v5/plan');
+        tcVeloUrl.searchParams.set('fromPlace', `${gpsData.domicile.lat},${gpsData.domicile.lon}`);
+        tcVeloUrl.searchParams.set('toPlace', `${gpsData.travail.lat},${gpsData.travail.lon}`);
+        tcVeloUrl.searchParams.set('time', tcDatetime);
+        tcVeloUrl.searchParams.set('transitModes', 'BUS,TRAM,SUBWAY,RAIL,FERRY');
+        tcVeloUrl.searchParams.set('preTransitModes', 'BIKE');
+        tcVeloUrl.searchParams.set('postTransitModes', 'BIKE,WALK');
+        tcVeloUrl.searchParams.set('maxTransfers', '4');
+
+        const rTCVelo = await fetch(tcVeloUrl);
+        const jTCVelo = await rTCVelo.json();
+        console.log('🚲🚌 TC+Vélo réponse brute:', JSON.stringify(jTCVelo).slice(0, 300));
+
+        const itinTCVelo = jTCVelo.itineraries || jTCVelo.plan?.itineraries;
+        if (itinTCVelo?.[0]) {
+          const best = itinTCVelo[0];
+          gpsData.route.dureeTcVelo = Math.round(best.duration / 60);
+          gpsData.route.correspondancesTcVelo = best.transfers || 0;
+          const modes = [...new Set(best.legs.filter(l => l.mode !== 'WALK' && l.mode !== 'BICYCLE').map(l => l.mode))];
+          gpsData.route.modesTcVelo = modes.map(m => ({
+            BUS:'Bus', TRAM:'Tramway', SUBWAY:'Métro',
+            RAIL:'Train/RER', FERRY:'Ferry', CABLE_CAR:'Téléphérique'
+          }[m] || m)).join(', ');
+          console.log('✅ TC+Vélo (Transitous):', gpsData.route.dureeTcVelo, 'min,', gpsData.route.correspondancesTcVelo, 'correspondance(s):', gpsData.route.modesTcVelo);
+        } else {
+          console.warn('⚠️ TC+Vélo: aucun itinéraire trouvé');
+        }
+      } catch (e) {
+        console.error('❌ Erreur calcul TC+Vélo (Transitous):', e);
+      }
     }
 
     function setupAutocomplete(inputId, suggestionsId, type) {
@@ -872,10 +908,28 @@
         Surfaces_Velo: gpsData.route.surfaces || '',
         Types_Voies_Velo: gpsData.route.typesVoies || '',
 
-        // 🚌 Transports en commun (Transitous)
+        // 🚌 Transports en commun — marche à pied (Transitous)
         Temps_TC_min: gpsData.route.dureeTc || 0,
         Correspondances_TC: gpsData.route.correspondancesTc || 0,
-        Modes_TC: gpsData.route.modesTc || ''
+        Modes_TC: gpsData.route.modesTc || '',
+
+        // 🚲🚌 Intermodalité vélo + TC (Transitous)
+        Temps_TC_Velo_min: gpsData.route.dureeTcVelo || 0,
+        Correspondances_TC_Velo: gpsData.route.correspondancesTcVelo || 0,
+        Modes_TC_Velo: gpsData.route.modesTcVelo || '',
+
+        // 🗺️ Liens Google Maps (pour les emails)
+        Liens_Google_Maps: (() => {
+          if (!gpsData.domicile.lat || !gpsData.travail.lat) return '';
+          const from = `${gpsData.domicile.lat},${gpsData.domicile.lon}`;
+          const to   = `${gpsData.travail.lat},${gpsData.travail.lon}`;
+          const base = `https://maps.google.com/maps?saddr=${encodeURIComponent(from)}&daddr=${encodeURIComponent(to)}`;
+          return [
+            `TC: ${base}&dirflg=r`,
+            `Vélo: ${base}&dirflg=b`,
+            `Voiture: ${base}&dirflg=d`
+          ].join('\n');
+        })()
       };
       
       try {
