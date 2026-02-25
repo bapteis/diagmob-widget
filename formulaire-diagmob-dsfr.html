@@ -343,7 +343,7 @@
               </div>
             </fieldset>
             
-            <!-- Question conditionnelle : Difficulté parking (si voiture) -->
+            <!-- Question conditionnelle : Difficulté parking (si voiture ou covoiturage) -->
             <div class="question-conditionnelle" id="question-parking">
               <div class="fr-checkbox-group">
                 <input type="checkbox" id="difficulte-parking" name="difficulte-parking" value="true">
@@ -352,7 +352,27 @@
                 </label>
               </div>
             </div>
-            
+
+            <!-- Question conditionnelle : Voiture électrique (si voiture sans passagers) -->
+            <div class="question-conditionnelle" id="question-voiture-electrique">
+              <div class="fr-checkbox-group">
+                <input type="checkbox" id="voiture-electrique" name="voiture-electrique" value="true">
+                <label class="fr-label" for="voiture-electrique">
+                  Ma voiture est électrique
+                </label>
+              </div>
+            </div>
+
+            <!-- Question conditionnelle : Accepte contact covoiturage (si covoiturage) -->
+            <div class="question-conditionnelle" id="question-contact-covoit">
+              <div class="fr-checkbox-group">
+                <input type="checkbox" id="accepte-contact-covoit" name="accepte-contact-covoit" value="true">
+                <label class="fr-label" for="accepte-contact-covoit">
+                  Un agent autosoliste avec un trajet similaire au vôtre, pourrait-il vous contacter afin de covoiturer avec vous ?
+                </label>
+              </div>
+            </div>
+
             <!-- Question conditionnelle : Mentor vélo (si vélo) -->
             <div class="question-conditionnelle" id="question-mentor-velo">
               <div class="fr-checkbox-group">
@@ -487,22 +507,40 @@
     // QUESTIONS CONDITIONNELLES
     // ═══════════════════════════════════════════════════════════════
     const transportInputs = document.querySelectorAll('input[name="transport"]');
-    const questionParking = document.getElementById('question-parking');
-    const questionMentorVelo = document.getElementById('question-mentor-velo');
-    
+    const questionParking        = document.getElementById('question-parking');
+    const questionVoitureElec    = document.getElementById('question-voiture-electrique');
+    const questionContactCovoit  = document.getElementById('question-contact-covoit');
+    const questionMentorVelo     = document.getElementById('question-mentor-velo');
+
     transportInputs.forEach(input => {
       input.addEventListener('change', function() {
         const value = this.value;
-        
-        // Afficher question parking si voiture (sans passagers) ou covoiturage
+
+        // Difficulté parking → voiture ou covoiturage
         if (value === 'Voiture (sans passagers)' || value === 'Covoiturage') {
           questionParking.classList.add('visible');
         } else {
           questionParking.classList.remove('visible');
           document.getElementById('difficulte-parking').checked = false;
         }
-        
-        // Afficher question mentor vélo si vélo
+
+        // Voiture électrique → uniquement voiture sans passagers
+        if (value === 'Voiture (sans passagers)') {
+          questionVoitureElec.classList.add('visible');
+        } else {
+          questionVoitureElec.classList.remove('visible');
+          document.getElementById('voiture-electrique').checked = false;
+        }
+
+        // Accepte contact covoiturage → uniquement covoiturage
+        if (value === 'Covoiturage') {
+          questionContactCovoit.classList.add('visible');
+        } else {
+          questionContactCovoit.classList.remove('visible');
+          document.getElementById('accepte-contact-covoit').checked = false;
+        }
+
+        // Mentor vélo → vélo musculaire ou électrique
         if (value === 'Vélo musculaire' || value === 'Vélo électrique') {
           questionMentorVelo.classList.add('visible');
         } else {
@@ -553,17 +591,23 @@
         .join(', ');
     }
 
-    // Prochain lundi à 8h pour le calcul TC
-    // Retourne { date: "YYYY-MM-DD", time: "08:00:00" } (format OTP/Transitous)
+    // Prochain lundi à 8h — ISO 8601 avec offset fuseau local (ex: 2026-03-02T08:00:00+01:00)
+    // L'API MOTIS v2 attend un date-time complet avec timezone (type: string, format: date-time)
     function prochainLundiMatin() {
       const d = new Date();
       const jour = d.getDay(); // 0=dim, 1=lun...
       const joursJusquLundi = jour === 1 ? 7 : (8 - jour) % 7 || 7;
       d.setDate(d.getDate() + joursJusquLundi);
+      d.setHours(8, 0, 0, 0);
       const year  = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day   = String(d.getDate()).padStart(2, '0');
-      return { date: `${year}-${month}-${day}`, time: '08:00:00' };
+      // Calcul de l'offset timezone du navigateur (ex: France = +01:00 ou +02:00)
+      const tzOff  = -d.getTimezoneOffset(); // en minutes (positif = UTC+N)
+      const tzSign = tzOff >= 0 ? '+' : '-';
+      const tzH    = String(Math.floor(Math.abs(tzOff) / 60)).padStart(2, '0');
+      const tzM    = String(Math.abs(tzOff) % 60).padStart(2, '0');
+      return `${year}-${month}-${day}T08:00:00${tzSign}${tzH}:${tzM}`;
     }
 
     async function calcRoute() {
@@ -652,12 +696,11 @@
 
       // ─── 3. TRANSPORTS EN COMMUN (Transitous/MOTIS) ───────────────
       try {
-        const { date: tcDate, time: tcTime } = prochainLundiMatin();
+        const tcDatetime = prochainLundiMatin(); // ex: "2026-03-02T08:00:00+01:00"
         const tcUrl = new URL('https://api.transitous.org/api/v5/plan');
         tcUrl.searchParams.set('fromPlace', `${gpsData.domicile.lat},${gpsData.domicile.lon}`);
         tcUrl.searchParams.set('toPlace', `${gpsData.travail.lat},${gpsData.travail.lon}`);
-        tcUrl.searchParams.set('date', tcDate);   // ex: "2026-02-23"
-        tcUrl.searchParams.set('time', tcTime);   // "08:00:00"
+        tcUrl.searchParams.set('time', tcDatetime); // ISO 8601 date-time avec timezone
         tcUrl.searchParams.set('transitModes', 'BUS,TRAM,SUBWAY,RAIL,FERRY');
         tcUrl.searchParams.set('preTransitModes', 'WALK');
         tcUrl.searchParams.set('postTransitModes', 'WALK');
@@ -779,6 +822,8 @@
       const telephone = document.getElementById('telephone').value || '';
       const handicap = document.getElementById('handicap').checked;
       const difficuteParking = document.getElementById('difficulte-parking').checked;
+      const voitureElectrique = document.getElementById('voiture-electrique').checked;
+      const accepteContactCovoit = document.getElementById('accepte-contact-covoit').checked;
       const mentorVelo = document.getElementById('mentor-velo').checked;
       const nbJoursSemaine = document.getElementById('nb-jours-semaine').value;
       
@@ -798,6 +843,8 @@
         Telephone: telephone,
         Handicap: handicap,
         Difficulte_Parking: difficuteParking,
+        Voiture_Electrique: voitureElectrique,
+        Accepte_Contact_Covoit: accepteContactCovoit,
         Mentor_Velo: mentorVelo,
         Adresse_Domicile: gpsData.domicile.label,
         GPS_Dom_Lat: gpsData.domicile.lat,
