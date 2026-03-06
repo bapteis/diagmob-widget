@@ -237,6 +237,9 @@
               <option value="CPAM">CPAM</option>
               <option value="ADEME">ADEME</option>
               <option value="CNRS">CNRS</option>
+              <option value="DASEN">DASEN</option>
+              <option value="ONAC">ONAC</option>
+              <option value="UDAP">UDAP</option>
               <option value="Autre service">Autre service</option>
             </select>
           </div>
@@ -600,6 +603,41 @@
       return `${year}-${month}-${day}T08:00:00${tzSign}${tzH}:${tzM}`;
     }
 
+    // Convertit une polyline encodée 3D (ORS avec elevation:true) en polyline 2D standard.
+    // ORS /json avec elevation:true encode lat+lon+élévation en triplets — un décodeur 2D
+    // lira l'élévation comme latitude et décalera tout, produisant un tracé complètement faux.
+    function ors3DPolyTo2D(enc) {
+      if (!enc) return '';
+      const pts = [];
+      let i = 0, lat = 0, lon = 0, ele = 0;
+      while (i < enc.length) {
+        let b, shift = 0, res = 0;
+        do { b = enc.charCodeAt(i++) - 63; res |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        lat += res & 1 ? ~(res >> 1) : res >> 1;
+        shift = 0; res = 0;
+        do { b = enc.charCodeAt(i++) - 63; res |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        lon += res & 1 ? ~(res >> 1) : res >> 1;
+        shift = 0; res = 0;
+        do { b = enc.charCodeAt(i++) - 63; res |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        ele += res & 1 ? ~(res >> 1) : res >> 1;  // décodé mais ignoré
+        pts.push([lat, lon]);
+      }
+      function encOne(curr, prev) {
+        let d = curr - prev;
+        d <<= 1;
+        if (d < 0) d = ~d;
+        let s = '';
+        while (d >= 0x20) { s += String.fromCharCode((0x20 | (d & 0x1f)) + 63); d >>= 5; }
+        return s + String.fromCharCode(d + 63);
+      }
+      let out = '', pLat = 0, pLon = 0;
+      for (const [la, lo] of pts) {
+        out += encOne(la, pLat) + encOne(lo, pLon);
+        pLat = la; pLon = lo;
+      }
+      return out;
+    }
+
     async function calcRoute() {
       if (!gpsData.domicile.lat || !gpsData.travail.lat) return;
 
@@ -664,8 +702,8 @@
             // ascent/descent calculés proprement par ORS (pas de bruit DEM)
             gpsData.route.denivelePositif = Math.round(summary.ascent || 0);
             gpsData.route.deniveleNegatif = Math.round(summary.descent || 0);
-            // geometry = polyline déjà encodée (format Google/Mapbox standard)
-            gpsData.route.polylineVelo = route.geometry;
+            // geometry = polyline 3D encodée (ORS avec elevation:true) → convertir en 2D
+            gpsData.route.polylineVelo = ors3DPolyTo2D(route.geometry);
 
             const extras = route.extras || {};
             gpsData.route.surfaces = formatExtraInfo(extras.surface, {
