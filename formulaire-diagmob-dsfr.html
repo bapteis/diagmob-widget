@@ -547,7 +547,7 @@
 
     const gpsData = {
       domicile: { lat: null, lon: null, label: '' },
-      travail: { lat: null, lon: null, label: '' },
+      travail: { lat: null, lon: null, label: '', postcode: '', city: '' },
       route: {
         // Voiture (OSRM)
         distVoiture: 0, dureeVoiture: 0, polylineVoiture: '',
@@ -643,7 +643,8 @@
               [parseFloat(gpsData.travail.lon), parseFloat(gpsData.travail.lat)]
             ],
             extra_info: ['surface', 'waytype', 'steepness'],
-            elevation: true
+            elevation: true,
+            preference: 'recommended'
           })
         });
 
@@ -789,6 +790,10 @@
                   gpsData[type].lat = feature.geometry.coordinates[1];
                   gpsData[type].lon = feature.geometry.coordinates[0];
                   gpsData[type].label = feature.properties.label;
+                  if (type === 'travail') {
+                    gpsData.travail.postcode = feature.properties.postcode || '';
+                    gpsData.travail.city     = feature.properties.city     || '';
+                  }
 
                   // Mettre à jour les champs cachés
                   if (type === 'domicile') {
@@ -902,6 +907,7 @@
         Adresse_Travail: gpsData.travail.label,
         GPS_Trav_Lat: gpsData.travail.lat,
         GPS_Trav_Lon: gpsData.travail.lon,
+        Code_Postal_Travail: gpsData.travail.postcode,
         Mode_Transport: document.querySelector('input[name="transport"]:checked').value,
         Jours_Site_Moyenne: parseInt(nbJoursSemaine),
         Jours_Presence: jours,
