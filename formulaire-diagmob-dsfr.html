@@ -321,7 +321,7 @@
                 </div>
                 <div class="fr-radio-group">
                   <input type="radio" id="transport-vae" name="transport" value="Vélo électrique">
-                  <label class="fr-label" for="transport-vae">🚴⚡ Vélo électrique</label>
+                  <label class="fr-label" for="transport-vae">🚴⚡ Vélo électrique et trottinette</label>
                 </div>
                 <div class="fr-radio-group">
                   <input type="radio" id="transport-marche" name="transport" value="Marche à pied">
@@ -374,12 +374,30 @@
                 </label>
               </div>
             </div>
+
+            <!-- Question conditionnelle : FMD (covoiturage, vélo, marche) -->
+            <div class="question-conditionnelle" id="question-fmd">
+              <div class="fr-checkbox-group">
+                <input type="checkbox" id="fmd" name="fmd" value="true">
+                <label class="fr-label" for="fmd">
+                  Bénéficiez-vous du forfait mobilités durables (<a href="https://www.ecologie.gouv.fr/politiques-publiques/soutien-employeurs-aux-mobilites-durables" target="_blank" rel="noopener noreferrer">FMD</a>) ?
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Case à cocher : prise en charge employeur abonnement TC -->
+          <div class="fr-checkbox-group">
+            <input type="checkbox" id="employeur-tc" name="employeur-tc" value="true">
+            <label class="fr-label" for="employeur-tc">
+              Votre employeur prend-il en charge une partie de votre abonnement de transport en commun ?
+            </label>
           </div>
 
           <!-- Nombre de jours présent sur site par semaine -->
           <div class="fr-select-group">
             <label class="fr-label" for="nb-jours-semaine">
-              Nombre de jours présent sur site par semaine *
+              Nombre de jours présent sur site par semaine (en moyenne) *
             </label>
             <select class="fr-select" id="nb-jours-semaine" name="nb-jours-semaine" required>
               <option value="">-- Sélectionnez --</option>
@@ -395,7 +413,7 @@
           <div class="fr-form-group">
             <fieldset class="fr-fieldset">
               <legend class="fr-fieldset__legend fr-text--regular">
-                Jours de présence sur site *
+                Jours de présence sur site (en général)*
               </legend>
               <div class="fr-fieldset__content">
                 <div class="fr-checkbox-group">
@@ -502,6 +520,7 @@
     const questionVoitureElec    = document.getElementById('question-voiture-electrique');
     const questionContactCovoit  = document.getElementById('question-contact-covoit');
     const questionMentorVelo     = document.getElementById('question-mentor-velo');
+    const questionFmd            = document.getElementById('question-fmd');
 
     transportInputs.forEach(input => {
       input.addEventListener('change', function() {
@@ -537,6 +556,15 @@
         } else {
           questionMentorVelo.classList.remove('visible');
           document.getElementById('mentor-velo').checked = false;
+        }
+
+        // FMD → covoiturage, vélo musculaire, vélo électrique, marche à pied
+        const fmdModes = ['Covoiturage', 'Vélo musculaire', 'Vélo électrique', 'Marche à pied'];
+        if (fmdModes.includes(value)) {
+          questionFmd.classList.add('visible');
+        } else {
+          questionFmd.classList.remove('visible');
+          document.getElementById('fmd').checked = false;
         }
       });
     });
@@ -817,7 +845,7 @@
             const response = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&limit=5`);
             const data = await response.json();
             
-            suggestions.innerHTML = '';
+            suggestions.replaceChildren();
             
             if (data.features && data.features.length > 0) {
               data.features.forEach(feature => {
@@ -897,6 +925,8 @@
       const voitureElectrique = document.getElementById('voiture-electrique').checked;
       const accepteContactCovoit = document.getElementById('accepte-contact-covoit').checked;
       const mentorVelo = document.getElementById('mentor-velo').checked;
+      const forfaitMobilite = document.getElementById('fmd').checked;
+      const employeurTc = document.getElementById('employeur-tc').checked;
       const nbJoursSemaine = document.getElementById('nb-jours-semaine').value;
       
       // Jours de présence
@@ -939,6 +969,8 @@
         Voiture_Electrique: voitureElectrique,
         Accepte_Contact_Covoit: accepteContactCovoit,
         Mentor_Velo: mentorVelo,
+        Forfait_Mobilite_Durable: forfaitMobilite,
+        Employeur_Prise_En_Charge_TC: employeurTc,
         Adresse_Domicile: gpsData.domicile.label,
         GPS_Dom_Lat: gpsData.domicile.lat,
         GPS_Dom_Lon: gpsData.domicile.lon,
