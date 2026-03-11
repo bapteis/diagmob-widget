@@ -311,10 +311,7 @@
                   <input type="radio" id="transport-covoit" name="transport" value="Covoiturage">
                   <label class="fr-label" for="transport-covoit">🚗👥 Covoiturage</label>
                 </div>
-                <div class="fr-radio-group">
-                  <input type="radio" id="transport-tc" name="transport" value="Transports en commun">
-                  <label class="fr-label" for="transport-tc">🚌 Transports en commun</label>
-                </div>
+                
                 <div class="fr-radio-group">
                   <input type="radio" id="transport-velo" name="transport" value="Vélo musculaire">
                   <label class="fr-label" for="transport-velo">🚴 Vélo musculaire</label>
@@ -328,8 +325,12 @@
                   <label class="fr-label" for="transport-marche">🚶 Marche à pied</label>
                 </div>
                 <div class="fr-radio-group">
+                  <input type="radio" id="transport-tc" name="transport" value="Transports en commun">
+                  <label class="fr-label" for="transport-tc"> 🚶🚌 Transports en commun </label>
+                </div>
+                <div class="fr-radio-group">
                   <input type="radio" id="transport-inter" name="transport" value="Intermodalité">
-                  <label class="fr-label" for="transport-inter">🚗🚌 Intermodalité</label>
+                  <label class="fr-label" for="transport-inter">🚗/🚴+ 🚌 Intermodalité </label>
                 </div>
               </div>
             </fieldset>
@@ -535,7 +536,7 @@
         }
 
         // Voiture électrique → uniquement voiture sans passagers
-        if (value === 'Voiture (sans passagers)') {
+        if (value === 'Voiture (sans passagers)'|| value === 'Covoiturage') {
           questionVoitureElec.classList.add('visible');
         } else {
           questionVoitureElec.classList.remove('visible');
@@ -559,7 +560,7 @@
         }
 
         // FMD → covoiturage, vélo musculaire, vélo électrique, marche à pied
-        const fmdModes = ['Covoiturage', 'Vélo musculaire', 'Vélo électrique', 'Marche à pied'];
+        const fmdModes = ['Covoiturage', 'Vélo musculaire', 'Vélo électrique'];
         if (fmdModes.includes(value)) {
           questionFmd.classList.add('visible');
         } else {
