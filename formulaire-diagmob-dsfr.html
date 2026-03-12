@@ -385,14 +385,16 @@
                 </label>
               </div>
             </div>
-          </div>
 
-          <!-- Case à cocher : prise en charge employeur abonnement TC -->
-          <div class="fr-checkbox-group">
-            <input type="checkbox" id="employeur-tc" name="employeur-tc" value="true">
-            <label class="fr-label" for="employeur-tc">
-              J'ai un abonnement de transport en commun, partiellement pris en charge par mon employeur ?
-            </label>
+            <!-- Question conditionnelle : Abonnement TC employeur (tous modes) -->
+            <div class="question-conditionnelle" id="question-employeur-tc">
+              <div class="fr-checkbox-group">
+                <input type="checkbox" id="employeur-tc" name="employeur-tc" value="true">
+                <label class="fr-label" for="employeur-tc">
+                  J'ai un abonnement de transport en commun, partiellement pris en charge par mon employeur
+                </label>
+              </div>
+            </div>
           </div>
 
           <!-- Nombre de jours présent sur site par semaine -->
@@ -515,6 +517,7 @@
     const questionContactCovoit  = document.getElementById('question-contact-covoit');
     const questionMentorVelo     = document.getElementById('question-mentor-velo');
     const questionFmd            = document.getElementById('question-fmd');
+    const questionEmployeurTc    = document.getElementById('question-employeur-tc');
 
     transportInputs.forEach(input => {
       input.addEventListener('change', function() {
@@ -560,6 +563,9 @@
           questionFmd.classList.remove('visible');
           document.getElementById('fmd').checked = false;
         }
+
+        // Abonnement TC employeur → toujours visible dès qu'un mode est sélectionné
+        questionEmployeurTc.classList.add('visible');
       });
     });
 
