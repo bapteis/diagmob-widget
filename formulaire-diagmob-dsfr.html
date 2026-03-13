@@ -929,7 +929,7 @@
       const email = document.getElementById('email').value;
       const service = document.getElementById('service').value;
       const telephone = document.getElementById('telephone').value || '';
-      const handicap = document.getElementById('handicap').checked;
+      const handicap = document.getElementById('handicap')?.checked || false;
       const difficuteParking = document.getElementById('difficulte-parking').checked;
       const voitureElectrique = document.getElementById('voiture-electrique').checked;
       const accepteContactCovoit = document.getElementById('accepte-contact-covoit').checked;
