@@ -612,23 +612,28 @@
         .join(', ');
     }
 
-    // Prochain lundi à 8h — ISO 8601 avec offset fuseau local (ex: 2026-03-02T08:00:00+01:00)
     // L'API MOTIS v2 attend un date-time complet avec timezone (type: string, format: date-time)
-    function prochainLundiMatin() {
+    // heureStr : "HH:MM" (ex: "08:30"). Par défaut 08:00 si absent ou invalide.
+    function prochainLundi(heureStr) {
+      const [hh, mm] = (heureStr || '08:00').split(':').map(Number);
+      const h = isFinite(hh) ? hh : 8;
+      const m = isFinite(mm) ? mm : 0;
       const d = new Date();
       const jour = d.getDay(); // 0=dim, 1=lun...
       const joursJusquLundi = jour === 1 ? 7 : (8 - jour) % 7 || 7;
       d.setDate(d.getDate() + joursJusquLundi);
-      d.setHours(8, 0, 0, 0);
+      d.setHours(h, m, 0, 0);
       const year  = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day   = String(d.getDate()).padStart(2, '0');
+      const hPad  = String(h).padStart(2, '0');
+      const mPad  = String(m).padStart(2, '0');
       // Calcul de l'offset timezone du navigateur (ex: France = +01:00 ou +02:00)
       const tzOff  = -d.getTimezoneOffset(); // en minutes (positif = UTC+N)
       const tzSign = tzOff >= 0 ? '+' : '-';
       const tzH    = String(Math.floor(Math.abs(tzOff) / 60)).padStart(2, '0');
       const tzM    = String(Math.abs(tzOff) % 60).padStart(2, '0');
-      return `${year}-${month}-${day}T08:00:00${tzSign}${tzH}:${tzM}`;
+      return `${year}-${month}-${day}T${hPad}:${mPad}:00${tzSign}${tzH}:${tzM}`;
     }
 
     // Convertit une polyline encodée 3D (ORS avec elevation:true) en polyline 2D standard.
@@ -758,11 +763,13 @@
 
       // ─── 3. TRANSPORTS EN COMMUN (Transitous/MOTIS) ───────────────
       try {
-        const tcDatetime = prochainLundiMatin(); // ex: "2026-03-02T08:00:00+01:00"
+        const heureArrivee = document.getElementById('heure-arrivee')?.value || '08:00';
+        const tcDatetime = prochainLundi(heureArrivee); // arrivée souhaitée sur site
         const tcUrl = new URL('https://api.transitous.org/api/v5/plan');
         tcUrl.searchParams.set('fromPlace', `${gpsData.domicile.lat},${gpsData.domicile.lon}`);
         tcUrl.searchParams.set('toPlace', `${gpsData.travail.lat},${gpsData.travail.lon}`);
-        tcUrl.searchParams.set('time', tcDatetime); // ISO 8601 date-time avec timezone
+        tcUrl.searchParams.set('time', tcDatetime); // ISO 8601 — heure d'arrivée souhaitée
+        tcUrl.searchParams.set('arriveBy', 'true');  // calcul à rebours depuis l'heure d'arrivée
         tcUrl.searchParams.set('transitModes', 'BUS,TRAM,SUBWAY,RAIL,FERRY');
         tcUrl.searchParams.set('preTransitModes', 'WALK');
         tcUrl.searchParams.set('postTransitModes', 'WALK');
@@ -793,11 +800,13 @@
 
       // ─── 4. INTERMODALITÉ VÉLO + TC (Transitous/MOTIS) ─────────────
       try {
-        const tcDatetime = prochainLundiMatin();
+        const heureArrivee = document.getElementById('heure-arrivee')?.value || '08:00';
+        const tcDatetime = prochainLundi(heureArrivee);
         const tcVeloUrl = new URL('https://api.transitous.org/api/v5/plan');
         tcVeloUrl.searchParams.set('fromPlace', `${gpsData.domicile.lat},${gpsData.domicile.lon}`);
         tcVeloUrl.searchParams.set('toPlace', `${gpsData.travail.lat},${gpsData.travail.lon}`);
         tcVeloUrl.searchParams.set('time', tcDatetime);
+        tcVeloUrl.searchParams.set('arriveBy', 'true');
         tcVeloUrl.searchParams.set('transitModes', 'BUS,TRAM,SUBWAY,RAIL,FERRY');
         tcVeloUrl.searchParams.set('preTransitModes', 'BIKE');
         tcVeloUrl.searchParams.set('postTransitModes', 'BIKE,WALK');
@@ -925,8 +934,8 @@
       const voitureElectrique = document.getElementById('voiture-electrique').checked;
       const accepteContactCovoit = document.getElementById('accepte-contact-covoit').checked;
       const mentorVelo = document.getElementById('mentor-velo').checked;
-      const forfaitMobilite = document.getElementById('fmd').checked;
-      const employeurTc = document.getElementById('employeur-tc').checked;
+      const forfaitMobilite = document.getElementById('fmd')?.checked || false;
+      const employeurTc = document.getElementById('employeur-tc')?.checked || false;
       const nbJoursSemaine = document.getElementById('nb-jours-semaine').value;
       
       // Jours de présence
