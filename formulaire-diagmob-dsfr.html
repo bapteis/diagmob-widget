@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Diag Mob - Diagnostic Mobilité</title>
+  <title>Mon Diag'Mob - Pour une mobilité gagnante</title>
   
   <!-- DSFR CSS -->
   <link rel="stylesheet" href="https://unpkg.com/@gouvfr/dsfr@1.11.2/dist/dsfr.min.css">
@@ -142,7 +142,7 @@
   <div style="background: white; padding: 1rem 1.5rem; border-bottom: 3px solid #000091; display: flex; align-items: center; gap: 1.5rem;">
     <img src="https://img.mailinblue.com/10358918/images/content_library/original/696fa50ad791ce62a128b0b7.png" alt="Marianne - Logo" height="80" style="max-height: 80px; width: auto;">
     <div>
-      <p style="margin: 0; font-size: 1.1em; font-weight: bold; color: #000091;">Mon Diag'Mob</p>
+      <p style="margin: 0; font-size: 1.1em; font-weight: bold; color: #000091;">Diag'Mob</p>
       <p style="margin: 0; font-size: 0.85em; color: #666;">Diagnostic Mobilité Domicile-Travail</p>
     </div>
   </div>
@@ -160,19 +160,16 @@
     <!-- Texte introductif -->
     <div class="intro-text">
       <p><strong>Bonjour,</strong></p>
-      <p>Et si vos trajets domicile-travail devenaient plus économiques, conviviaux et écologiques ?</p>
-      <p>Nous lançons un outil pour présenter à chaque agents public, les différentes solutions de mobilité pour aller au travail (initative portée par le ministère des Transports) </p>
-      <p>👉 <strong>Exemple concret :</strong> un agent qui habite à 15 km de son lieu de travail et covoiture en alternance avec un collègue économise près de <strong>1 000 € par an</strong>.</p>
-      <p>En répondant à ce questionnaire, vous pourrez :</p>
+      <p>Et si vos trajets domicile-travail devenaient plus économiques, agréables et écologiques ?</p>
+      <p>En répondant à ce questionnaire pour les agents de la fonction publique, vous pourrez :</p>
       <ul>
         <li>Avoir un bilan par email de vos trajets domicile-travail,</li>
         <li>Réduire vos frais de déplacement,</li>
-        <li>Être mis en relation avec des collègues proches de chez vous pour expérimenter le covoiturage,</li>
-        <li>Vous orienter vers le vélo ou les transports en communs,</li>
+        <li>Être mis en relation avec des collègues proches de chez vous pour expérimenter le covoiturage ou le vélo</li>
         <li>Bénéficier du Forfait Mobilités Durables (100 à 300 € par an),</li>
         <li>Contribuer à la transition écologique.</li>
-        
       </ul>
+      <p> <i> Outil développé par le ministère des Transports </i>
     </div>
 
     <!-- Message succès (affiché à la place du formulaire) -->
@@ -196,12 +193,13 @@
         <div class="fr-fieldset__content">
           
           <!-- RGPD avec texte complet -->
-          <div class="fr-checkbox-group">
-            <input type="checkbox" id="rgpd" name="rgpd" value="Oui" required>
+          <div class="fr-checkbox-group" id="rgpd-group">
+            <input type="checkbox" id="rgpd" name="rgpd" value="Oui">
             <label class="fr-label" for="rgpd">
               J'accepte le traitement de mes données (RGPD) *
-              <span class="fr-hint-text">J'accepte que mes données personnelles (adresse de domicile, adresse de travail, jours de présentiels, horaire et adresse e-mail) soient utilisées uniquement dans le cadre de cette démarche de cartographie des trajets et de changement d'habitude de mobilités par l'équipe de Mon Diag'Mob et les référents mobilités de mon service, pendant une durée maximale de 12 mois, conformément aux informations fournies sur notre page RGPD.</span>
+              <span class="fr-hint-text">J'accepte que mes données personnelles (ville de domicile, adresse de travail et adresse e-mail) soient utilisées uniquement dans le cadre de cette démarche de cartographie des trajets et de changement d'habitude de mobilités par l'équipe Diag'Mob et les référents mobilités de mon service, pendant une durée maximale de 12 mois, conformément aux informations fournies sur notre page RGPD.</span>
             </label>
+            <p class="fr-error-text" id="error-rgpd" style="display:none">Veuillez accepter le traitement de vos données pour continuer.</p>
           </div>
 
           <!-- Email -->
@@ -263,8 +261,7 @@
           <!-- Adresse domicile -->
           <div class="fr-input-group">
             <label class="fr-label" for="adresse-domicile">
-              Adresse de domicile * 
-              <i>(Ce n'est pas nécessaire de mettre le numéro de votre rue. Si vous préférez, il est posssible d'indiquer une adresse voisine de la votre)</i>
+              Adresse de domicile *
             </label>
             <div class="autocomplete-wrapper">
               <input class="fr-input" type="text" id="adresse-domicile" name="adresse-domicile" placeholder="Commencez à saisir votre adresse..." required autocomplete="off">
@@ -417,7 +414,7 @@
           </div>
 
           <!-- Jours de présence -->
-          <div class="fr-form-group">
+          <div class="fr-form-group" id="jours-group">
             <fieldset class="fr-fieldset">
               <legend class="fr-fieldset__legend fr-text--regular">
                 Jours de présence sur site (en général)*
@@ -445,12 +442,13 @@
                 </div>
               </div>
             </fieldset>
+            <p class="fr-error-text" id="error-jours" style="display:none">Veuillez sélectionner au moins un jour de présence.</p>
           </div>
 
           <!-- Heure d'arrivée -->
           <div class="fr-input-group">
             <label class="fr-label" for="heure-arrivee">
-              Heure d'arrivée au travail (en général) *
+              Heure d'arrivée habituelle *
             </label>
             <input class="fr-input" type="time" id="heure-arrivee" name="heure-arrivee" required>
           </div>
@@ -458,7 +456,7 @@
           <!-- Heure de départ -->
           <div class="fr-input-group">
             <label class="fr-label" for="heure-depart">
-              Heure de départ du travail (en général) *
+              Heure de départ habituelle *
             </label>
             <input class="fr-input" type="time" id="heure-depart" name="heure-depart" required>
           </div>
@@ -515,6 +513,21 @@
     // ═══════════════════════════════════════════════════════════════
     // QUESTIONS CONDITIONNELLES
     // ═══════════════════════════════════════════════════════════════
+    // Effacer l'erreur RGPD dès que l'utilisateur coche la case
+    document.getElementById('rgpd').addEventListener('change', function() {
+      if (this.checked) {
+        document.getElementById('error-rgpd').style.display = 'none';
+        document.getElementById('rgpd-group').classList.remove('fr-checkbox-group--error');
+      }
+    });
+    // Effacer l'erreur jours dès qu'un jour est coché
+    document.querySelectorAll('input[name="jours"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        document.getElementById('error-jours').style.display = 'none';
+        document.getElementById('jours-group').classList.remove('fr-fieldset--error');
+      });
+    });
+
     const transportInputs = document.querySelectorAll('input[name="transport"]');
     const questionParking        = document.getElementById('question-parking');
     const questionVoitureElec    = document.getElementById('question-voiture-electrique');
@@ -918,9 +931,16 @@
       e.preventDefault();
       
       // Validation RGPD
+      const rgpdError = document.getElementById('error-rgpd');
+      const rgpdGroup = document.getElementById('rgpd-group');
       if (!document.getElementById('rgpd').checked) {
-        alert('Veuillez accepter le traitement de vos données (RGPD).');
+        rgpdError.style.display = 'block';
+        rgpdGroup.classList.add('fr-checkbox-group--error');
+        rgpdGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
+      } else {
+        rgpdError.style.display = 'none';
+        rgpdGroup.classList.remove('fr-checkbox-group--error');
       }
       
       // Validation GPS
@@ -946,9 +966,16 @@
       const joursChecked = document.querySelectorAll('input[name="jours"]:checked');
       const jours = Array.from(joursChecked).map(cb => cb.value).join(', ');
       
+      const joursError = document.getElementById('error-jours');
+      const joursGroup = document.getElementById('jours-group');
       if (jours.length === 0) {
-        alert('Veuillez sélectionner au moins un jour de présence.');
+        joursError.style.display = 'block';
+        joursGroup.classList.add('fr-fieldset--error');
+        joursGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
+      } else {
+        joursError.style.display = 'none';
+        joursGroup.classList.remove('fr-fieldset--error');
       }
 
       // S'assurer que tous les calculs d'itinéraires sont terminés
