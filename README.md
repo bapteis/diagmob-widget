@@ -6,7 +6,7 @@
 
 Le formulaire collecte les pratiques de mobilité actuelles de chaque agent, calcule automatiquement des alternatives (vélo, covoiturage, transports en commun), puis déclenche un parcours de changement de comportement personnalisé par email.
 
-> Projet incubé à la Fabrique Numérique du ministère des Transports — [beta.gouv.fr/startups/diag-mob.html](https://beta.gouv.fr/startups/diag-mob.html)
+> Projet incubé à la Fabrique Numérique du ministère de la transition écologique, porté par l'intraprenariat du minisitère des Transports — [beta.gouv.fr/startups/diag-mob.html](https://beta.gouv.fr/startups/diag-mob.html)
 
 ---
 
@@ -32,8 +32,9 @@ Formulaire DSFR (navigateur)
 L'agent renseigne :
 - **Adresse domicile / travail** — autocomplétion via l'API BAN (Base Adresses Nationale)
 - **Mode de transport principal** — voiture, covoiturage, vélo, VAE, marche, TC, intermodalité
+- ** FMD et remboursement transports en communs**
 - **Jours et horaires de présence** sur site
-- **Informations complémentaires** — handicap éventuel, téléphone (facultatif)
+- **Informations complémentaires** —  téléphone (facultatif)
 
 ### Calcul automatique des trajets (en arrière-plan)
 Dès que les deux adresses sont renseignées, le formulaire calcule simultanément :
@@ -52,31 +53,6 @@ Le calcul TC utilise l'**heure d'arrivée souhaitée** de l'agent pour calculer 
 
 ---
 
-## 🗄️ Données stockées dans Grist
-
-### Table `DiagmobV2`
-
-| Colonne | Type | Description |
-|---------|------|-------------|
-| `Email_Pro` | Text | Email de contact |
-| `Service` | Text | Service / ministère |
-| `Adresse_Domicile` / `Adresse_Travail` | Text | Adresses saisies |
-| `GPS_Dom_Lat/Lon` / `GPS_Trav_Lat/Lon` | Numeric | Coordonnées GPS |
-| `Mode_Transport` | Text | Mode déclaré |
-| `Jours_Presence` | Text | Jours sur site |
-| `Heure_Arrivee` / `Heure_Depart` | Text | Horaires |
-| `Distance_Voiture_km` / `Temps_Voiture_min` | Numeric | Trajet voiture |
-| `Distance_Velo_km` / `Temps_Velo_min` | Numeric | Trajet vélo |
-| `Denivele_Positif_m` | Numeric | Dénivelé vélo |
-| `Types_Voies_Velo` | Text | Répartition des voies cyclables (ex: "Piste cyclable 29%...") |
-| `Surfaces_Velo` | Text | Répartition des revêtements |
-| `Temps_TC_min` / `Correspondances_TC` | Numeric | Trajet TC |
-| `Temps_TC_Velo_min` | Numeric | Trajet intermodal |
-| `Forfait_Mobilite_Durable` | Toggle | Bénéficie du FMD |
-| `Employeur_Prise_En_Charge_TC` | Toggle | Abonnement TC employeur |
-| `Profil_Mobilite` | Text | **Calculé par le script Python** — déclenche le webhook |
-
----
 
 ## 🤖 Pipeline d'analyse et d'envoi d'emails
 
