@@ -336,7 +336,7 @@
               </div>
             </fieldset>
                         <!-- Titre questions complémentaires -->
-            <p class="fr-text--sm" style="color:#666;font-style:italic;margin:16px 0 8px 0">
+            <p id="titre-questions-complementaires" class="fr-text--sm" style="color:#666;font-style:italic;margin:16px 0 8px 0;display:none">
               Cochez les affirmations qui vous correspondent, si non, laissez vide
             </p>
             <!-- Question conditionnelle : Difficulté parking (si voiture ou covoiturage) -->
@@ -588,6 +588,14 @@
 
         // Abonnement TC employeur → toujours visible dès qu'un mode est sélectionné
         questionEmployeurTc.classList.add('visible');
+        // Titre questions complémentaires — singulier si TC uniquement, pluriel sinon
+        const titreCompl = document.getElementById('titre-questions-complementaires');
+        titreCompl.style.display = 'block';
+        if (value === 'Transports en commun') {
+          titreCompl.textContent = "Cochez l'affirmation qui vous correspond, si non, laissez vide";
+        } else {
+          titreCompl.textContent = "Cochez les affirmations qui vous correspondent, si non, laissez vide";
+        }
       });
     });
 
