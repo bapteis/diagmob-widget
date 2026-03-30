@@ -267,12 +267,13 @@
               <input class="fr-input" type="text" id="adresse-domicile" name="adresse-domicile" placeholder="Commencez à saisir votre adresse..." required autocomplete="off">
               <div class="suggestions" id="suggestions-domicile"></div>
             </div>
+            <p class="fr-error-text" id="error-domicile" style="display:none">Veuillez sélectionner une adresse dans la liste de suggestions.</p>
             <input type="hidden" id="gps-dom-lat" name="gps-dom-lat">
             <input type="hidden" id="gps-dom-lon" name="gps-dom-lon">
           </div>
 
           <!-- Adresse travail -->
-          <div class="fr-input-group">
+          <div class="fr-input-group" id="group-travail">
             <label class="fr-label" for="adresse-travail">
               Adresse de travail *
             </label>
@@ -280,6 +281,7 @@
               <input class="fr-input" type="text" id="adresse-travail" name="adresse-travail" placeholder="Commencez à saisir votre adresse..." required autocomplete="off">
               <div class="suggestions" id="suggestions-travail"></div>
             </div>
+            <p class="fr-error-text" id="error-travail" style="display:none">Veuillez sélectionner une adresse dans la liste de suggestions.</p>
             <input type="hidden" id="gps-trav-lat" name="gps-trav-lat">
             <input type="hidden" id="gps-trav-lon" name="gps-trav-lon">
           </div>
@@ -912,6 +914,14 @@
 
                   suggestions.style.display = 'none';
 
+                  // Effacer l'erreur si l'adresse est maintenant valide
+                  if (type === 'domicile') {
+                    document.getElementById('error-domicile').style.display = 'none';
+                    input.closest('.fr-input-group').classList.remove('fr-input-group--error');
+                  } else {
+                    document.getElementById('error-travail').style.display = 'none';
+                    document.getElementById('group-travail').classList.remove('fr-input-group--error');
+                  }
                   // Calculer automatiquement les trajets en arrière-plan
                   calcRoute();
                 });
@@ -957,11 +967,35 @@
         rgpdGroup.classList.remove('fr-checkbox-group--error');
       }
       
-      // Validation GPS
-      if (!gpsData.domicile.lat || !gpsData.travail.lat) {
-        alert('Veuillez sélectionner une adresse dans la liste de suggestions pour le domicile et le travail.');
-        return;
+      
+      // Validation GPS — erreurs inline DSFR
+      const errDom  = document.getElementById('error-domicile');
+      const errTrav = document.getElementById('error-travail');
+      const grpDom  = document.getElementById('adresse-domicile').closest('.fr-input-group');
+      const grpTrav = document.getElementById('group-travail');
+      let gpsOk = true;
+
+      if (!gpsData.domicile.lat) {
+        errDom.style.display = 'block';
+        grpDom.classList.add('fr-input-group--error');
+        grpDom.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        gpsOk = false;
+      } else {
+        errDom.style.display = 'none';
+        grpDom.classList.remove('fr-input-group--error');
       }
+
+      if (!gpsData.travail.lat) {
+        errTrav.style.display = 'block';
+        grpTrav.classList.add('fr-input-group--error');
+        if (gpsOk) grpTrav.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        gpsOk = false;
+      } else {
+        errTrav.style.display = 'none';
+        grpTrav.classList.remove('fr-input-group--error');
+      }
+
+      if (!gpsOk) return;
 
       // Récupérer les valeurs
       const email = document.getElementById('email').value;
