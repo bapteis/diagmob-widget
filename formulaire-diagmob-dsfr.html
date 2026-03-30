@@ -591,7 +591,8 @@
         // Titre questions complémentaires — singulier si TC uniquement, pluriel sinon
         const titreCompl = document.getElementById('titre-questions-complementaires');
         titreCompl.style.display = 'block';
-        if (value === 'Transports en commun') {
+        const modesSingulier = ['Transports en commun', 'Marche à pied', 'Intermodalité'];
+        if (modesSingulier.includes(value)) {
           titreCompl.textContent = "Cochez l'affirmation qui vous correspond, si non, laissez vide";
         } else {
           titreCompl.textContent = "Cochez les affirmations qui vous correspondent, si non, laissez vide";
