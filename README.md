@@ -50,6 +50,7 @@ Le calcul TC utilise l'**heure d'arrivée souhaitée** de l'agent pour calculer 
 
 ### Envoi vers Grist
 À la soumission, toutes les données (saisies + calculées) sont envoyées directement à Grist via l'API REST, sans clé API côté client (accès anonyme autorisé par les Access Rules Grist).
+Un email récapitulatif est envoyé à l'usager qui  dresse un bilan de ses déplacements domicile-travail (temps passé, distance en km, coût, CO2)
 
 ---
 
