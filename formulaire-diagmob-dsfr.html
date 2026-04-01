@@ -623,9 +623,9 @@
         denivelePositif: 0, deniveleNegatif: 0,
         surfaces: '', typesVoies: '',
         // Transports en commun (Transitous) — marche à pied
-        dureeTc: 0, correspondancesTc: 0, modesTc: '',
+        dureeTc: 0, correspondancesTc: 0, modesTc: '', polylineTc: '',
         // Transports en commun (Transitous) — intermodalité vélo + TC
-        dureeTcVelo: 0, correspondancesTcVelo: 0, modesTcVelo: ''
+        dureeTcVelo: 0, correspondancesTcVelo: 0, modesTcVelo: '', polylineInter: ''
       }
     };
 
@@ -826,6 +826,11 @@
             BUS:'Bus', TRAM:'Tramway', SUBWAY:'Métro',
             RAIL:'Train/RER', FERRY:'Ferry', CABLE_CAR:'Téléphérique'
           }[m] || m)).join(', ');
+          // Polyline par leg (mode + points encodés) pour affichage carte
+          const legsGeoTc = best.legs
+            .filter(l => l.legGeometry?.points)
+            .map(l => ({ mode: l.mode, points: l.legGeometry.points }));
+          gpsData.route.polylineTc = legsGeoTc.length ? JSON.stringify(legsGeoTc) : '';
           console.log('✅ TC (Transitous):', gpsData.route.dureeTc, 'min,', gpsData.route.correspondancesTc, 'correspondance(s):', gpsData.route.modesTc);
         } else {
           console.warn('⚠️ TC: aucun itinéraire trouvé (zone peut-être non couverte)');
@@ -862,6 +867,11 @@
             BUS:'Bus', TRAM:'Tramway', SUBWAY:'Métro',
             RAIL:'Train/RER', FERRY:'Ferry', CABLE_CAR:'Téléphérique'
           }[m] || m)).join(', ');
+          // Polyline par leg pour affichage carte (vélo en vert, TC en violet)
+          const legsGeoInter = best.legs
+            .filter(l => l.legGeometry?.points)
+            .map(l => ({ mode: l.mode, points: l.legGeometry.points }));
+          gpsData.route.polylineInter = legsGeoInter.length ? JSON.stringify(legsGeoInter) : '';
           console.log('✅ TC+Vélo (Transitous):', gpsData.route.dureeTcVelo, 'min,', gpsData.route.correspondancesTcVelo, 'correspondance(s):', gpsData.route.modesTcVelo);
         } else {
           console.warn('⚠️ TC+Vélo: aucun itinéraire trouvé');
@@ -1093,11 +1103,13 @@
         Temps_TC_min: gpsData.route.dureeTc || 0,
         Correspondances_TC: gpsData.route.correspondancesTc || 0,
         Modes_TC: gpsData.route.modesTc || '',
+        Trajet_TC_Polyline: gpsData.route.polylineTc || '',
 
         // 🚲🚌 Intermodalité vélo + TC (Transitous)
         Temps_TC_Velo_min: gpsData.route.dureeTcVelo || 0,
         Correspondances_TC_Velo: gpsData.route.correspondancesTcVelo || 0,
         Modes_TC_Velo: gpsData.route.modesTcVelo || '',
+        Trajet_Inter_Polyline: gpsData.route.polylineInter || '',
 
         // 🗺️ Liens Google Maps (pour les emails)
         Liens_Google_Maps: (() => {
