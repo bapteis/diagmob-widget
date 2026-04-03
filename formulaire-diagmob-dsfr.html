@@ -197,7 +197,7 @@
             <input type="checkbox" id="rgpd" name="rgpd" value="Oui">
             <label class="fr-label" for="rgpd">
               J'accepte le traitement de mes données (RGPD) *
-              <span class="fr-hint-text">J'accepte que mes données personnelles (ville de domicile, adresse de travail et adresse e-mail) soient utilisées uniquement dans le cadre de cette démarche de cartographie des trajets et de changement d'habitude de mobilités par l'équipe Diag'Mob et les référents mobilités de mon service, pendant une durée maximale de 12 mois, conformément aux informations fournies sur <a href="https://www.notion.so/Mon-Diag-Mob-Pour-une-mobilit-gagnante-des-agents-de-la-fonction-publique-RGPD-261de5d9e5838060956ef3560dabf1e0" target="_blank" rel="noopener noreferrer"> notre page RGPD</a>.</span>
+              <span class="fr-hint-text">J'accepte que mes données personnelles (ville de domicile, adresse de travail et adresse e-mail) soient utilisées uniquement dans le cadre de cette démarche de cartographie des trajets et de changement d'habitude de mobilités par l'équipe Diag'Mob et les référents mobilités de mon service, pendant une durée maximale de 12 mois, conformément aux informations fournies sur notre page RGPD.</span>
             </label>
             <p class="fr-error-text" id="error-rgpd" style="display:none">Veuillez accepter le traitement de vos données pour continuer.</p>
           </div>
@@ -1155,12 +1155,25 @@
         document.getElementById('success-message').style.display = 'block';
         
       } catch (error) {
-        console.error('❌ Erreur soumission:', error);
-        alert('Erreur lors de l\'envoi. Veuillez réessayer.');
-        
-        const btn = document.getElementById('btn-submit');
-        btn.disabled = false;
-        btn.textContent = 'Reçevoir mon diagnostic';
+        console.error('❌ Erreur Grist:', error);
+
+        // Fallback : envoi des données par email via n8n si Grist est indisponible
+        try {
+          await fetch('https://n8n.incubateur.dnum.din.developpement-durable.gouv.fr/webhook/b2f2fce6-4a99-41c5-9851-a2a495b50259', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields, erreur: error.message, timestamp: new Date().toISOString() })
+          });
+          // L'utilisateur voit le message de succès — il ne sait pas que Grist était down
+          document.getElementById('diagmob-form').style.display = 'none';
+          document.getElementById('success-message').style.display = 'block';
+        } catch (e2) {
+          console.error('❌ Fallback n8n aussi en échec:', e2);
+          alert('Service temporairement indisponible. Merci de réessayer dans 15 minutes.');
+          const btn = document.getElementById('btn-submit');
+          btn.disabled = false;
+          btn.textContent = 'Recevoir mon diagnostic';
+        }
       }
     });
   </script>
