@@ -711,8 +711,20 @@
       return out;
     }
 
+    // Contrôleur global : annule le calcRoute précédent dès qu'un nouveau démarre
+    let _calcRouteController = null;
+
     async function calcRoute() {
       if (!gpsData.domicile.lat || !gpsData.travail.lat) return;
+
+      // Annuler immédiatement tout calcRoute encore en cours
+      if (_calcRouteController) {
+        _calcRouteController.abort();
+        console.log('⚪ calcRoute précédent annulé');
+      }
+      const controller = new AbortController();
+      _calcRouteController = controller;
+      const signal = controller.signal;
 
       const p1 = `${gpsData.domicile.lon},${gpsData.domicile.lat}`;
       const p2 = `${gpsData.travail.lon},${gpsData.travail.lat}`;
@@ -723,7 +735,10 @@
 
       // ─── 1. VOITURE (OSRM) ───────────────────────────────────────
       try {
-        const rCar = await fetch(`https://router.project-osrm.org/route/v1/driving/${p1};${p2}?overview=full&geometries=geojson`);
+        const rCar = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${p1};${p2}?overview=full&geometries=geojson`,
+          { signal }
+        );
         const jCar = await rCar.json();
         if (jCar.routes?.[0]) {
           gpsData.route.distVoiture = (jCar.routes[0].distance / 1000).toFixed(2);
@@ -738,6 +753,7 @@
           console.log('✅ Voiture:', gpsData.route.distVoiture, 'km,', gpsData.route.dureeVoiture, 'min (OSRM ' + dureeLibre + 'min × ' + facteurTrafic + ' trafic)');
         }
       } catch (e) {
+        if (e.name === 'AbortError') return;
         console.error('❌ Erreur calcul voiture (OSRM):', e);
       }
 
@@ -756,7 +772,8 @@
             extra_info: ['surface', 'waytype', 'steepness'],
             elevation: true,
             preference: 'recommended'
-          })
+          }),
+          signal
         });
 
         if (!rBike.ok) {
@@ -798,6 +815,7 @@
           }
         }
       } catch (e) {
+        if (e.name === 'AbortError') return;
         console.error('❌ Erreur calcul vélo (ORS):', e);
       }
 
@@ -815,7 +833,7 @@
         tcUrl.searchParams.set('postTransitModes', 'WALK');
         tcUrl.searchParams.set('maxTransfers', '4');
 
-        const rTC = await fetch(tcUrl);
+        const rTC = await fetch(tcUrl, { signal });
         const jTC = await rTC.json();
         console.log('🚌 TC réponse brute:', JSON.stringify(jTC).slice(0, 300));
 
@@ -840,6 +858,7 @@
           console.warn('⚠️ TC: aucun itinéraire trouvé (zone peut-être non couverte)');
         }
       } catch (e) {
+        if (e.name === 'AbortError') return;
         console.error('❌ Erreur calcul TC (Transitous):', e);
       }
 
@@ -857,7 +876,7 @@
         tcVeloUrl.searchParams.set('postTransitModes', 'BIKE,WALK');
         tcVeloUrl.searchParams.set('maxTransfers', '4');
 
-        const rTCVelo = await fetch(tcVeloUrl);
+        const rTCVelo = await fetch(tcVeloUrl, { signal });
         const jTCVelo = await rTCVelo.json();
         console.log('🚲🚌 TC+Vélo réponse brute:', JSON.stringify(jTCVelo).slice(0, 300));
 
@@ -881,6 +900,7 @@
           console.warn('⚠️ TC+Vélo: aucun itinéraire trouvé');
         }
       } catch (e) {
+        if (e.name === 'AbortError') return;
         console.error('❌ Erreur calcul TC+Vélo (Transitous):', e);
       }
     }
@@ -1051,7 +1071,6 @@
         btnCalc.textContent = 'Calcul des itinéraires...';
         await calcRoute();
         // Si ORS vélo a échoué (distance = 0), on retente une fois après 2s
-        // (peut arriver en cas de rate-limit ou de pic de charge ORS)
         if (parseFloat(gpsData.route.distVelo) === 0) {
           console.warn('⚠️ Données vélo nulles, nouvelle tentative ORS dans 2s...');
           btnCalc.textContent = 'Nouvelle tentative...';
@@ -1059,6 +1078,16 @@
           await calcRoute();
           if (parseFloat(gpsData.route.distVelo) === 0) {
             console.warn('⚠️ ORS vélo toujours indisponible — valeurs à 0 envoyées');
+          }
+        }
+        // Si Transitous TC a échoué (durée = 0), on retente une fois après 2s
+        if (gpsData.route.dureeTc === 0) {
+          console.warn('⚠️ TC Transitous = 0, nouvelle tentative dans 2s...');
+          btnCalc.textContent = 'Nouvelle tentative TC...';
+          await new Promise(r => setTimeout(r, 2000));
+          await calcRoute();
+          if (gpsData.route.dureeTc === 0) {
+            console.warn('⚠️ TC toujours indisponible (zone non couverte ?) — valeur à 0 envoyée');
           }
         }
       }
