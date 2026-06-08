@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Diag'Mob — Questionnaire de fin d'expérimentation</title>
+
+<!--
+  OPTION B — Lien unique (pas de champ email dans le formulaire)
+  ─────────────────────────────────────────────────────────────
+  Le lien doit contenir ?id=<grist_row_id>  (ex: ?id=42)
+  Ce paramètre est lu automatiquement et envoyé comme Grist_ID.
+
+  COLONNES À CRÉER DANS GRIST (table QuestionnairesImpact) :
+  ─────────────────────────────────────────────────────────────
+  Grist_ID                     Integer   ← clé de liaison avec DiagmobV2
+  Date_Reponse                 Text
+  QI_Note_Utilisabilite        Integer
+  QI_Commentaire_Utilisabilite Text
+  QI_Reflexion                 Text
+  QI_Reflexion_Pourquoi        Text
+  QI_Perso_Juste               Text
+  QI_Perso_Juste_Pourquoi      Text
+  QI_Intention_Changement      Text   (valeur : A / B / C)
+  QI_Raisons_Pas_Changement    Text   (valeurs séparées par ;)
+  QI_Raisons_Autre             Text
+  QI_Mode_Envisage             Text
+  QI_Nb_Jours_Envisage         Integer
+  QI_Echeance                  Text
+  QI_Contact_Collegue_Envisage Text
+  QI_Frein                     Text
+  QI_Mode_Adopte               Text
+  QI_Covoit_Collegue           Text
+  QI_Velo_Collegue             Text
+  QI_Poursuivre                Text
+  QI_Poursuivre_Pourquoi       Text
+  QI_Nb_Jours_Adopte           Integer
+  QI_Note_Globale              Integer
+  QI_Points_Positifs           Text
+  QI_Points_Negatifs           Text
+
+  RÈGLE GRIST (table QuestionnairesImpact) :
+  ─────────────────────────────────────────────────────────────
+  Condition : user.IsAnonymous
+  Permissions : +C uniquement (créer, pas lire)
+-->
+
+<style>
+  :root {
+    --bleu-france: #000091;
+    --rouge-marianne: #E1000F;
+    --lavande: #ECECFE;
+    --gris-fond: #f6f6f6;
+    --gris-bordure: #ddd;
+    --gris-texte: #3a3a3a;
+    --gris-clair: #666;
+    --blanc: #ffffff;
+    --vert-succes: #18753c;
+    --rouge-erreur: #ce0500;
+    --orange-warn: #b34000;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Marianne", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--gris-texte);
+    background: var(--gris-fond);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .header { background: var(--blanc); border-bottom: 1px solid var(--gris-bordure); box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+  .header-inner { max-width: 780px; margin: 0 auto; padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 1.25rem; }
+  .header img { display: block; height: auto; }
+  .header-titles { border-left: 2px solid var(--gris-bordure); padding-left: 1.25rem; }
+  .header-titles h1 { font-size: 1.15rem; color: var(--bleu-france); font-weight: 700; line-height: 1.3; }
+  .header-titles p { font-size: 0.85rem; color: var(--gris-clair); margin-top: 0.15rem; }
+
+  .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .banner-invalid { background: #fff4e5; border-left: 4px solid var(--orange-warn); padding: 1.25rem 1.5rem; border-radius: 0 4px 4px 0; margin-bottom: 1.5rem; display: none; }
+  .banner-invalid.visible { display: block; }
+  .banner-invalid p { font-size: 0.95rem; color: var(--orange-warn); font-weight: 600; }
+  .banner-invalid p + p { font-weight: 400; margin-top: 0.5rem; font-size: 0.88rem; color: #666; }
+
+  .intro { background: var(--lavande); border-left: 4px solid var(--bleu-france); padding: 1.25rem 1.5rem; border-radius: 0 4px 4px 0; margin-bottom: 2.5rem; }
+  .intro p { font-size: 0.95rem; }
+  .intro strong { color: var(--bleu-france); }
+
+  .section { background: var(--blanc); border: 1px solid var(--gris-bordure); border-radius: 6px; padding: 1.75rem; margin-bottom: 1.5rem; }
+  .section-num { display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--bleu-france); background: var(--lavande); padding: 0.2rem 0.6rem; border-radius: 4px; margin-bottom: 0.75rem; }
+  .section h2 { font-size: 1.2rem; color: var(--gris-texte); margin-bottom: 1.25rem; font-weight: 700; }
+
+  .field { margin-bottom: 1.5rem; }
+  .field:last-child { margin-bottom: 0; }
+  .field > label, .field > .field-label { display: block; font-weight: 600; font-size: 0.98rem; margin-bottom: 0.5rem; }
+  .field .hint { font-weight: 400; color: var(--gris-clair); font-size: 0.85rem; }
+  .req { color: var(--rouge-marianne); margin-left: 2px; }
+
+  input[type="text"], input[type="number"], textarea, select {
+    width: 100%; padding: 0.6rem 0.75rem;
+    border: 1px solid #929292; border-bottom: 2px solid var(--bleu-france);
+    border-radius: 4px 4px 0 0; background: #eee;
+    font-family: inherit; font-size: 0.95rem; color: var(--gris-texte);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--bleu-france); outline-offset: 2px; }
+
+  .field-error { display: none; color: var(--rouge-erreur); font-size: 0.85rem; margin-top: 0.35rem; font-weight: 600; }
+  .field.has-error input, .field.has-error textarea, .field.has-error select { border-color: var(--rouge-erreur); border-bottom-color: var(--rouge-erreur); }
+  .field.has-error .scale label { border-color: var(--rouge-erreur); }
+  .field.has-error .field-error { display: block; }
+
+  .scale { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+  .scale input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .scale label { display: flex; align-items: center; justify-content: center; width: 2.6rem; height: 2.6rem; border: 1px solid var(--gris-bordure); border-radius: 4px; cursor: pointer; font-weight: 600; background: var(--blanc); transition: all 0.12s ease; user-select: none; }
+  .scale label:hover { border-color: var(--bleu-france); }
+  .scale input:checked + label { background: var(--bleu-france); color: var(--blanc); border-color: var(--bleu-france); }
+  .scale-ends { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--gris-clair); margin-top: 0.4rem; }
+
+  .choices { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+  .choice { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.65rem 0.85rem; border: 1px solid var(--gris-bordure); border-radius: 4px; cursor: pointer; transition: all 0.12s ease; }
+  .choice:hover { border-color: var(--bleu-france); background: #fafaff; }
+  .choice input { margin-top: 0.25rem; accent-color: var(--bleu-france); width: 1.05rem; height: 1.05rem; flex-shrink: 0; }
+  .choice span { font-size: 0.95rem; }
+
+  .conditional { display: none; margin-top: 1.25rem; padding: 1.25rem; background: #fafaff; border: 1px dashed var(--bleu-france); border-radius: 6px; animation: reveal 0.25s ease; }
+  .conditional.visible { display: block; }
+  .conditional-sub { display: none; }
+  .conditional-sub.visible { display: block; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .conditional-tag { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--bleu-france); margin-bottom: 1rem; display: block; }
+
+  .submit-zone { text-align: center; margin-top: 2rem; }
+  .btn-submit { background: var(--bleu-france); color: var(--blanc); border: none; padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 600; font-family: inherit; border-radius: 4px; cursor: pointer; transition: background 0.15s ease; }
+  .btn-submit:hover { background: #00006d; }
+  .btn-submit:disabled { background: #929292; cursor: not-allowed; }
+
+  .feedback { margin-top: 1.25rem; padding: 1rem 1.25rem; border-radius: 4px; font-weight: 600; display: none; }
+  .feedback.ok { display: block; background: #b8fec9; color: var(--vert-succes); border-left: 4px solid var(--vert-succes); }
+  .feedback.err { display: block; background: #ffe9e9; color: var(--rouge-marianne); border-left: 4px solid var(--rouge-marianne); }
+
+  .success-screen { display: none; text-align: center; padding: 3rem 1.5rem; }
+  .success-screen.visible { display: block; }
+  .success-screen .check { width: 64px; height: 64px; margin: 0 auto 1.5rem; background: var(--vert-succes); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 2rem; }
+  .success-screen h2 { color: var(--bleu-france); margin-bottom: 0.75rem; }
+
+  footer { text-align: center; font-size: 0.8rem; color: var(--gris-clair); padding: 1.5rem; }
+
+  @media (max-width: 560px) {
+    .header-inner { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .header-titles { border-left: none; padding-left: 0; }
+    .scale label { width: 2.2rem; height: 2.2rem; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <img src="https://static.covoiturage.beta.gouv.fr/Logo_M_Tx_MDM_fb9df9f2ba.png" width="260" height="100" alt="Mon Diag'Mob — Ministère de la Transition écologique" />
+    <div class="header-titles">
+      <h1>Questionnaire de fin d'expérimentation</h1>
+      <p>Votre retour sur le dispositif Mon Diag'Mob</p>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Bannière lien invalide (affiché si ?id= absent de l'URL) -->
+  <div class="banner-invalid" id="bannerInvalid">
+    <p>Ce lien ne semble pas valide.</p>
+    <p>Merci d'utiliser le lien personnel qui vous a été envoyé par email. Si vous pensez qu'il s'agit d'une erreur, contactez baptiste.eisele@developpement-durable.gouv.fr</p>
+  </div>
+
+  <div class="intro">
+    <p><strong>Vos retours sont essentiels — 3 minutes !</strong></p>
+    <p>Vous avez participé à l'expérimentation Mon Diag'Mob, et votre avis nous est précieux. Qu'ils soient critiques ou positifs, tous vos retours comptent : ils nous permettront de mesurer l'impact réel du dispositif et de l'améliorer pour les prochains agents. Ensemble, avançons vers une mobilité gagnante !</p>
+    <p class="intro-mention">Les champs marqués d'un <span style="color:var(--rouge-marianne)">*</span> sont obligatoires.</p>
+  </div>
+
+  <form id="questionnaire">
+
+    <!-- SECTION 1 -->
+    <div class="section">
+      <span class="section-num">Partie 1</span>
+      <h2>Le dispositif</h2>
+
+      <div class="field" id="field-note_utilisabilite">
+        <span class="field-label">Comment évaluez-vous la facilité d'utilisation du dispositif Mon Diag'Mob ? <em>(bonne réception des emails, compréhension des chiffres, affichage de la cartographie)</em> <span class="req">*</span></span>
+        <div class="scale" data-scale="1-10" data-name="note_utilisabilite"></div>
+        <div class="scale-ends"><span>1 — Très difficile</span><span>10 — Très facile</span></div>
+        <div class="field-error" id="error-note_utilisabilite">Veuillez attribuer une note.</div>
+      </div>
+
+      <div class="field">
+        <label for="utilisabilite_commentaire">Qu'est-ce qui a rendu le dispositif facile ou difficile à utiliser ? <span class="hint">(facultatif)</span></label>
+        <textarea id="utilisabilite_commentaire" name="utilisabilite_commentaire"></textarea>
+      </div>
+    </div>
+
+    <!-- SECTION 2 -->
+    <div class="section">
+      <span class="section-num">Partie 2</span>
+      <h2>Votre perception de nos emails de communication</h2>
+
+      <div class="field" id="field-reflexion">
+        <span class="field-label">Les emails reçus (bilan personnalisé et suggestion d'alternative) vous ont-ils amené à réfléchir à vos trajets domicile-travail ? <span class="req">*</span></span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="reflexion" value="Oui"><span>Oui</span></label>
+          <label class="choice"><input type="radio" name="reflexion" value="Un peu"><span>Légèrement</span></label>
+          <label class="choice"><input type="radio" name="reflexion" value="Non"><span>Non</span></label>
+        </div>
+        <div class="field-error" id="error-reflexion">Veuillez choisir une réponse.</div>
+      </div>
+
+      <div class="field">
+        <label for="reflexion_pourquoi">Pourquoi ? <span class="hint">(facultatif)</span></label>
+        <textarea id="reflexion_pourquoi" name="reflexion_pourquoi"></textarea>
+      </div>
+
+      <div class="field" id="field-perso_juste">
+        <span class="field-label">Les informations chiffrées du bilan vous ont-elles paru justes par rapport à votre situation ? <span class="req">*</span></span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="perso_juste" value="Oui"><span>Oui</span></label>
+          <label class="choice"><input type="radio" name="perso_juste" value="En partie seulement"><span>En partie seulement</span></label>
+          <label class="choice"><input type="radio" name="perso_juste" value="Non"><span>Non</span></label>
+          <label class="choice"><input type="radio" name="perso_juste" value="Je ne m'en souviens plus"><span>Je ne m'en souviens plus</span></label>
+        </div>
+        <div class="field-error" id="error-perso_juste">Veuillez choisir une réponse.</div>
+      </div>
+
+      <div class="field">
+        <label for="perso_juste_pourquoi">Pourquoi ? <span class="hint">(facultatif)</span></label>
+        <textarea id="perso_juste_pourquoi" name="perso_juste_pourquoi"></textarea>
+      </div>
+    </div>
+
+    <!-- SECTION 3 -->
+    <div class="section">
+      <span class="section-num">Partie 3</span>
+      <h2>Votre mobilité aujourd'hui</h2>
+
+      <div class="field" id="field-intention_changement">
+        <span class="field-label">Suite à votre participation, où en êtes-vous ? <span class="req">*</span></span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="intention_changement" value="A"><span>Je n'ai pas prévu de changement</span></label>
+          <label class="choice"><input type="radio" name="intention_changement" value="B"><span>J'envisage de tester un nouveau mode de transport pour mes trajets domicile-travail</span></label>
+          <label class="choice"><input type="radio" name="intention_changement" value="C"><span>J'ai déjà commencé à expérimenter un nouveau mode de transport pour mes trajets domicile-travail</span></label>
+        </div>
+        <div class="field-error" id="error-intention_changement">Veuillez choisir une réponse.</div>
+
+        <!-- BLOC A -->
+        <div class="conditional" id="bloc-A">
+          <span class="conditional-tag">▸ Aucun changement prévu</span>
+          <div class="field">
+            <span class="field-label">Pour quelle(s) raison(s) ? <span class="hint">(plusieurs choix possibles)</span></span>
+            <div class="choices">
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Trajet inadapté (distance, horaires)"><span>Trajet inadapté (distance, horaires)</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Pas d'alternative satisfaisante"><span>Pas d'alternative satisfaisante</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Contraintes personnelles / familiales"><span>Contraintes personnelles / familiales</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Pas trouvé de collègue compatible"><span>Pas trouvé de collègue compatible</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Satisfait de mon mode actuel"><span>Satisfait de mon mode actuel</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Autre"><span>Autre</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="a_raisons_autre">Précisez <span class="hint">(facultatif)</span></label>
+            <input type="text" id="a_raisons_autre" name="a_raisons_autre">
+          </div>
+        </div>
+
+        <!-- BLOC B -->
+        <div class="conditional" id="bloc-B">
+          <span class="conditional-tag">▸ J'envisage de tester un nouveau mode</span>
+
+          <div class="field" id="field-b_mode_envisage">
+            <span class="field-label">Quel mode envisagez-vous de tester ? <span class="req">*</span></span>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="b_mode_envisage" value="Vélo / VAE"><span>Vélo / VAE</span></label>
+              <label class="choice"><input type="radio" name="b_mode_envisage" value="Covoiturage"><span>Covoiturage</span></label>
+              <label class="choice"><input type="radio" name="b_mode_envisage" value="Transport en commun"><span>Transport en commun</span></label>
+            </div>
+            <div class="field-error" id="error-b_mode_envisage">Veuillez choisir un mode.</div>
+          </div>
+
+          <div class="field" id="field-b_nb_jours">
+            <label for="b_nb_jours">Combien de jours par semaine envisagez-vous ? <span class="req">*</span></label>
+            <input type="number" id="b_nb_jours" name="b_nb_jours" min="1" max="5" style="max-width:100px">
+            <div class="field-error" id="error-b_nb_jours">Veuillez indiquer un nombre de jours (1–5).</div>
+          </div>
+
+          <div class="field" id="field-b_echeance">
+            <span class="field-label">À quelle échéance ? <span class="req">*</span></span>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="b_echeance" value="Dans le mois"><span>Dans le mois</span></label>
+              <label class="choice"><input type="radio" name="b_echeance" value="Dans les 3 mois"><span>Dans les 3 mois</span></label>
+              <label class="choice"><input type="radio" name="b_echeance" value="Dans les 6 mois"><span>Dans les 6 mois</span></label>
+              <label class="choice"><input type="radio" name="b_echeance" value="Pas encore défini"><span>Pas encore défini</span></label>
+            </div>
+            <div class="field-error" id="error-b_echeance">Veuillez choisir une échéance.</div>
+          </div>
+
+          <div class="field" id="field-b_contact_collegue">
+            <span class="field-label">Avez-vous déjà pris contact avec un collègue pour ce projet ? <span class="req">*</span></span>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="b_contact_collegue" value="Oui"><span>Oui</span></label>
+              <label class="choice"><input type="radio" name="b_contact_collegue" value="Non, mais je compte le faire"><span>Non, mais je compte le faire</span></label>
+              <label class="choice"><input type="radio" name="b_contact_collegue" value="Non"><span>Non, ce n'est pas nécessaire</span></label>
+            </div>
+            <div class="field-error" id="error-b_contact_collegue">Veuillez choisir une réponse.</div>
+          </div>
+
+          <div class="field">
+            <label for="b_frein">Qu'est-ce qui pourrait vous empêcher d'aller au bout de ce test ? <span class="hint">(facultatif)</span></label>
+            <textarea id="b_frein" name="b_frein"></textarea>
+          </div>
+        </div>
+
+        <!-- BLOC C -->
+        <div class="conditional" id="bloc-C">
+          <span class="conditional-tag">▸ J'ai déjà commencé une nouvelle pratique</span>
+
+          <div class="field" id="field-c_mode_adopte">
+            <span class="field-label">Quel mode avez-vous testé ? <span class="req">*</span></span>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="c_mode_adopte" value="Vélo / VAE"><span>Vélo / VAE</span></label>
+              <label class="choice"><input type="radio" name="c_mode_adopte" value="Covoiturage"><span>Covoiturage</span></label>
+              <label class="choice"><input type="radio" name="c_mode_adopte" value="Transport en commun"><span>Transport en commun</span></label>
+            </div>
+            <div class="field-error" id="error-c_mode_adopte">Veuillez choisir un mode.</div>
+          </div>
+
+          <div class="field conditional-sub" id="c-covoit">
+            <span class="field-label">Avez-vous covoituré avec un collaborateur rencontré grâce au dispositif ? <span class="req">*</span></span>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="c_covoit_collegue" value="Oui"><span>Oui</span></label>
+              <label class="choice"><input type="radio" name="c_covoit_collegue" value="Non, de mon côté"><span>Non, de mon côté</span></label>
+            </div>
+          </div>
+
+          <div class="field conditional-sub" id="c-velo">
+            <span class="field-label">Avez-vous pris des conseils ou réalisé un trajet avec un collaborateur rencontré grâce au dispositif ? <span class="req">*</span></span>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="c_velo_collegue" value="Oui"><span>Oui</span></label>
+              <label class="choice"><input type="radio" name="c_velo_collegue" value="Non, de mon côté"><span>Non, de mon côté</span></label>
+            </div>
+          </div>
+
+          <div class="field" id="field-c_poursuivre">
+            <span class="field-label">Comptez-vous poursuivre cette pratique ? <span class="req">*</span></span>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="c_poursuivre" value="Oui"><span>Oui</span></label>
+              <label class="choice"><input type="radio" name="c_poursuivre" value="Non"><span>Non</span></label>
+            </div>
+            <div class="field-error" id="error-c_poursuivre">Veuillez choisir une réponse.</div>
+          </div>
+
+          <div class="field">
+            <label for="c_poursuivre_pourquoi">Pourquoi ? <span class="hint">(facultatif)</span></label>
+            <textarea id="c_poursuivre_pourquoi" name="c_poursuivre_pourquoi"></textarea>
+          </div>
+
+          <div class="field conditional-sub" id="c-nbjours">
+            <label for="c_nb_jours">Combien de jours par semaine ? <span class="req">*</span></label>
+            <input type="number" id="c_nb_jours" name="c_nb_jours" min="1" max="5" style="max-width:100px">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4 -->
+    <div class="section">
+      <span class="section-num">Partie 4</span>
+      <h2>Votre avis libre</h2>
+
+      <div class="field" id="field-note_globale">
+        <span class="field-label">Au global, comment noteriez-vous la qualité du dispositif ? <span class="req">*</span></span>
+        <div class="scale" data-scale="1-10" data-name="note_globale"></div>
+        <div class="scale-ends"><span>1 — Très faible</span><span>10 — Excellente</span></div>
+        <div class="field-error" id="error-note_globale">Veuillez attribuer une note.</div>
+      </div>
+
+      <div class="field" id="field-points_positifs">
+        <label for="points_positifs">Quels sont les points positifs du dispositif selon vous ? <span class="req">*</span></label>
+        <textarea id="points_positifs" name="points_positifs"></textarea>
+        <div class="field-error" id="error-points_positifs">Veuillez renseigner ce champ.</div>
+      </div>
+
+      <div class="field" id="field-points_negatifs">
+        <label for="points_negatifs">Quels sont les points faibles ou ce qui vous a manqué ? <span class="req">*</span></label>
+        <textarea id="points_negatifs" name="points_negatifs"></textarea>
+        <div class="field-error" id="error-points_negatifs">Veuillez renseigner ce champ.</div>
+      </div>
+    </div>
+
+    <div class="submit-zone">
+      <button type="submit" class="btn-submit" id="btnSubmit">Envoyer mes réponses</button>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+  </form>
+
+  <div class="success-screen" id="successScreen">
+    <div class="check">✓</div>
+    <h2>Merci pour votre participation !</h2>
+    <p>Vos réponses ont bien été enregistrées. Elles contribueront directement à l'amélioration du dispositif Mon Diag'Mob.</p>
+  </div>
+
+</div>
+
+<footer>
+  Mon Diag'Mob — une startup d'État · Conforme aux Services publics écoresponsables (SPE)
+</footer>
+
+<script>
+  // ================================================================
+  // CONFIGURATION GRIST — POST anonyme vers table QuestionnairesImpact
+  // Aucune clé API, aucune lecture de données existantes.
+  // Prérequis Grist : table QuestionnairesImpact avec règle
+  //   user.IsAnonymous → +C (créer uniquement)
+  // ================================================================
+  const GRIST_SERVER = 'https://grist.incubateur.dnum.din.developpement-durable.gouv.fr';
+  const GRIST_DOC_ID = 'cfiCVUp2f85MBLuwwzUiGV';
+  const GRIST_TABLE  = 'QuestionnairesImpact';
+
+  // Lecture du paramètre ?id= dans l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const gristId   = parseInt(urlParams.get('id'), 10);
+
+  if (!gristId || isNaN(gristId)) {
+    document.getElementById('bannerInvalid').classList.add('visible');
+    document.getElementById('btnSubmit').disabled = true;
+  }
+
+  // ----------------------------------------------------------------
+  // Génération des échelles de notation
+  // ----------------------------------------------------------------
+  document.querySelectorAll(".scale").forEach(scale => {
+    const start = scale.dataset.scale === "0-10" ? 0 : 1;
+    const name  = scale.dataset.name;
+    for (let i = start; i <= 10; i++) {
+      const id    = name + "_" + i;
+      const input = document.createElement("input");
+      input.type = "radio"; input.name = name; input.value = i; input.id = id;
+      const label = document.createElement("label");
+      label.setAttribute("for", id); label.textContent = i;
+      scale.appendChild(input); scale.appendChild(label);
+    }
+  });
+
+  // ----------------------------------------------------------------
+  // Affichage conditionnel blocs A / B / C
+  // ----------------------------------------------------------------
+  const blocs = {
+    A: document.getElementById("bloc-A"),
+    B: document.getElementById("bloc-B"),
+    C: document.getElementById("bloc-C")
+  };
+  document.querySelectorAll('input[name="intention_changement"]').forEach(radio => {
+    radio.addEventListener("change", e => {
+      Object.values(blocs).forEach(b => b.classList.remove("visible"));
+      if (blocs[e.target.value]) blocs[e.target.value].classList.add("visible");
+    });
+  });
+
+  // Sous-conditionnels bloc C
+  const cCovoit  = document.getElementById("c-covoit");
+  const cVelo    = document.getElementById("c-velo");
+  const cNbJours = document.getElementById("c-nbjours");
+
+  document.querySelectorAll('input[name="c_mode_adopte"]').forEach(radio => {
+    radio.addEventListener("change", e => {
+      const v = e.target.value;
+      cCovoit.classList.toggle("visible", v === "Covoiturage");
+      cVelo.classList.toggle("visible",   v === "Vélo / VAE");
+    });
+  });
+
+  document.querySelectorAll('input[name="c_poursuivre"]').forEach(radio => {
+    radio.addEventListener("change", e => {
+      cNbJours.classList.toggle("visible", e.target.value === "Oui");
+    });
+  });
+
+  // Effacer erreur dès interaction
+  function clearError(fieldId) {
+    const f = document.getElementById('field-' + fieldId);
+    if (f) f.classList.remove('has-error');
+  }
+  document.querySelectorAll('input, textarea').forEach(el => {
+    el.addEventListener('input',  () => clearError(el.name || el.id.replace(/^[bc]_|^field-/, '')));
+    el.addEventListener('change', () => clearError(el.name));
+  });
+
+  // ----------------------------------------------------------------
+  // Validation
+  // ----------------------------------------------------------------
+  function showError(fieldId) {
+    const f = document.getElementById('field-' + fieldId);
+    if (f) {
+      f.classList.add('has-error');
+      f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return false;
+  }
+  function radioValue(name) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : '';
+  }
+
+  function validate(data) {
+    if (!data.QI_Note_Utilisabilite)    return showError('note_utilisabilite');
+    if (!data.QI_Reflexion)             return showError('reflexion');
+    if (!data.QI_Perso_Juste)           return showError('perso_juste');
+    if (!data.QI_Intention_Changement)  return showError('intention_changement');
+
+    const intent = data.QI_Intention_Changement;
+    if (intent === 'B') {
+      if (!data.QI_Mode_Envisage)              return showError('b_mode_envisage');
+      if (!data.QI_Nb_Jours_Envisage)          return showError('b_nb_jours');
+      if (!data.QI_Echeance)                   return showError('b_echeance');
+      if (!data.QI_Contact_Collegue_Envisage)  return showError('b_contact_collegue');
+    }
+    if (intent === 'C') {
+      if (!data.QI_Mode_Adopte)  return showError('c_mode_adopte');
+      if (!data.QI_Poursuivre)   return showError('c_poursuivre');
+    }
+    if (!data.QI_Note_Globale)     return showError('note_globale');
+    if (!data.QI_Points_Positifs)  return showError('points_positifs');
+    if (!data.QI_Points_Negatifs)  return showError('points_negatifs');
+    return true;
+  }
+
+  // ----------------------------------------------------------------
+  // Soumission
+  // ----------------------------------------------------------------
+  document.getElementById("questionnaire").addEventListener("submit", async e => {
+    e.preventDefault();
+    const feedback = document.getElementById("feedback");
+    const btn      = document.getElementById("btnSubmit");
+    feedback.className = "feedback";
+    feedback.textContent = "";
+
+    const aRaisons = Array.from(document.querySelectorAll('input[name="a_raisons"]:checked')).map(i => i.value);
+
+    const data = {
+      QI_Note_Utilisabilite:        parseInt(radioValue('note_utilisabilite')) || null,
+      QI_Commentaire_Utilisabilite: document.getElementById('utilisabilite_commentaire').value.trim(),
+      QI_Reflexion:                 radioValue('reflexion'),
+      QI_Reflexion_Pourquoi:        document.getElementById('reflexion_pourquoi').value.trim(),
+      QI_Perso_Juste:               radioValue('perso_juste'),
+      QI_Perso_Juste_Pourquoi:      document.getElementById('perso_juste_pourquoi').value.trim(),
+      QI_Intention_Changement:      radioValue('intention_changement'),
+      QI_Raisons_Pas_Changement:    aRaisons.join('; '),
+      QI_Raisons_Autre:             document.getElementById('a_raisons_autre').value.trim(),
+      QI_Mode_Envisage:             radioValue('b_mode_envisage'),
+      QI_Nb_Jours_Envisage:         parseInt(document.getElementById('b_nb_jours').value) || null,
+      QI_Echeance:                  radioValue('b_echeance'),
+      QI_Contact_Collegue_Envisage: radioValue('b_contact_collegue'),
+      QI_Frein:                     document.getElementById('b_frein').value.trim(),
+      QI_Mode_Adopte:               radioValue('c_mode_adopte'),
+      QI_Covoit_Collegue:           radioValue('c_covoit_collegue'),
+      QI_Velo_Collegue:             radioValue('c_velo_collegue'),
+      QI_Poursuivre:                radioValue('c_poursuivre'),
+      QI_Poursuivre_Pourquoi:       document.getElementById('c_poursuivre_pourquoi').value.trim(),
+      QI_Nb_Jours_Adopte:           parseInt(document.getElementById('c_nb_jours').value) || null,
+      QI_Note_Globale:              parseInt(radioValue('note_globale')) || null,
+      QI_Points_Positifs:           document.getElementById('points_positifs').value.trim(),
+      QI_Points_Negatifs:           document.getElementById('points_negatifs').value.trim(),
+    };
+
+    if (!validate(data)) return;
+
+    btn.disabled = true;
+    btn.textContent = "Envoi en cours…";
+
+    try {
+      const fields = {
+        Grist_ID:     gristId,
+        Date_Reponse: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        ...data
+      };
+
+      const res = await fetch(
+        `${GRIST_SERVER}/api/docs/${GRIST_DOC_ID}/tables/${GRIST_TABLE}/records`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ records: [{ fields }] })
+        }
+      );
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+
+      document.getElementById("questionnaire").style.display = "none";
+      document.getElementById("successScreen").classList.add("visible");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+    } catch (err) {
+      feedback.className = "feedback err";
+      feedback.textContent = "Une erreur est survenue lors de l'envoi. Merci de réessayer dans quelques instants.";
+      btn.disabled = false;
+      btn.textContent = "Envoyer mes réponses";
+    }
+  });
+</script>
+
+</body>
+</html>
