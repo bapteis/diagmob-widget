@@ -178,6 +178,7 @@
   <div class="intro">
     <p><strong>Vos retours sont essentiels — 3 minutes !</strong></p>
     <p>Vous avez participé à l'expérimentation Mon Diag'Mob, et votre avis nous est précieux. Qu'ils soient critiques ou positifs, tous vos retours comptent : ils nous permettront de mesurer l'impact réel du dispositif et de l'améliorer pour les prochains agents. Ensemble, avançons vers une mobilité gagnante !</p>
+    <p><em>Vos réponses sont uniquement à destination de Mon Diag'Mob.</em></p>
     <p class="intro-mention">Les champs marqués d'un <span style="color:var(--rouge-marianne)">*</span> sont obligatoires.</p>
   </div>
 
@@ -259,11 +260,22 @@
             <span class="field-label">Pour quelle(s) raison(s) ? <span class="hint">(plusieurs choix possibles)</span></span>
             <div class="choices">
               <label class="choice"><input type="checkbox" name="a_raisons" value="Trajet inadapté (distance, horaires)"><span>Trajet inadapté (distance, horaires)</span></label>
-              <label class="choice"><input type="checkbox" name="a_raisons" value="Pas d'alternative satisfaisante"><span>Pas d'alternative satisfaisante</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="J'aurais aimé avoir une autre alternative"><span>J'aurais aimé avoir une autre alternative</span></label>
               <label class="choice"><input type="checkbox" name="a_raisons" value="Contraintes personnelles / familiales"><span>Contraintes personnelles / familiales</span></label>
               <label class="choice"><input type="checkbox" name="a_raisons" value="Pas trouvé de collègue compatible"><span>Pas trouvé de collègue compatible</span></label>
               <label class="choice"><input type="checkbox" name="a_raisons" value="Satisfait de mon mode actuel"><span>Satisfait de mon mode actuel</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Besoin d'un accompagnement humain personnalisé pour changer"><span>Besoin d'un accompagnement humain personnalisé pour changer</span></label>
               <label class="choice"><input type="checkbox" name="a_raisons" value="Autre"><span>Autre</span></label>
+            </div>
+
+            <!-- Sous-question : quelle alternative souhaitée ? -->
+            <div class="conditional-sub" id="a-alternative" style="margin-top:1rem;padding:1rem;background:#fafaff;border:1px dashed var(--bleu-france);border-radius:6px;">
+              <span class="field-label" style="font-size:0.9rem;margin-bottom:0.5rem">Quelle alternative auriez-vous souhaité ? <span class="hint">(plusieurs choix possibles)</span></span>
+              <div class="choices">
+                <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Vélo / VAE"><span>Vélo / VAE</span></label>
+                <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Covoiturage"><span>Covoiturage</span></label>
+                <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Transport en commun / Intermodalité"><span>Transport en commun / Intermodalité</span></label>
+              </div>
             </div>
           </div>
           <div class="field">
@@ -279,9 +291,9 @@
           <div class="field" id="field-b_mode_envisage">
             <span class="field-label">Quel mode envisagez-vous de tester ? <span class="req">*</span></span>
             <div class="choices">
-              <label class="choice"><input type="radio" name="b_mode_envisage" value="Vélo / VAE"><span>Vélo / VAE</span></label>
-              <label class="choice"><input type="radio" name="b_mode_envisage" value="Covoiturage"><span>Covoiturage</span></label>
-              <label class="choice"><input type="radio" name="b_mode_envisage" value="Transport en commun"><span>Transport en commun</span></label>
+              <label class="choice"><input type="checkbox" name="b_mode_envisage" value="Vélo / VAE"><span>Vélo / VAE</span></label>
+              <label class="choice"><input type="checkbox" name="b_mode_envisage" value="Covoiturage"><span>Covoiturage</span></label>
+              <label class="choice"><input type="checkbox" name="b_mode_envisage" value="Transport en commun"><span>Transport en commun</span></label>
             </div>
             <div class="field-error" id="error-b_mode_envisage">Veuillez choisir un mode.</div>
           </div>
@@ -326,9 +338,9 @@
           <div class="field" id="field-c_mode_adopte">
             <span class="field-label">Quel mode avez-vous testé ? <span class="req">*</span></span>
             <div class="choices">
-              <label class="choice"><input type="radio" name="c_mode_adopte" value="Vélo / VAE"><span>Vélo / VAE</span></label>
-              <label class="choice"><input type="radio" name="c_mode_adopte" value="Covoiturage"><span>Covoiturage</span></label>
-              <label class="choice"><input type="radio" name="c_mode_adopte" value="Transport en commun"><span>Transport en commun</span></label>
+              <label class="choice"><input type="checkbox" name="c_mode_adopte" value="Vélo / VAE"><span>Vélo / VAE</span></label>
+              <label class="choice"><input type="checkbox" name="c_mode_adopte" value="Covoiturage"><span>Covoiturage</span></label>
+              <label class="choice"><input type="checkbox" name="c_mode_adopte" value="Transport en commun"><span>Transport en commun</span></label>
             </div>
             <div class="field-error" id="error-c_mode_adopte">Veuillez choisir un mode.</div>
           </div>
@@ -412,7 +424,7 @@
 </div>
 
 <footer>
-  Mon Diag'Mob — une startup d'État · Conforme aux Services publics écoresponsables (SPE)
+  Mon Diag'Mob — une startup d'État ·
 </footer>
 
 <script>
@@ -433,6 +445,16 @@
   if (!gristId || isNaN(gristId)) {
     document.getElementById('bannerInvalid').classList.add('visible');
     document.getElementById('btnSubmit').disabled = true;
+  }
+
+  // Bloquer si déjà répondu (localStorage)
+  const STORAGE_KEY = `diagmob_qi_done_${gristId}`;
+  if (localStorage.getItem(STORAGE_KEY)) {
+    document.getElementById('questionnaire').style.display = 'none';
+    document.getElementById('successScreen').classList.add('visible');
+    document.querySelector('#successScreen p').textContent =
+      'Vous avez déjà répondu à ce questionnaire. Merci pour votre participation !';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // ----------------------------------------------------------------
@@ -471,17 +493,26 @@
   const cVelo    = document.getElementById("c-velo");
   const cNbJours = document.getElementById("c-nbjours");
 
-  document.querySelectorAll('input[name="c_mode_adopte"]').forEach(radio => {
-    radio.addEventListener("change", e => {
-      const v = e.target.value;
-      cCovoit.classList.toggle("visible", v === "Covoiturage");
-      cVelo.classList.toggle("visible",   v === "Vélo / VAE");
+  document.querySelectorAll('input[name="c_mode_adopte"]').forEach(cb => {
+    cb.addEventListener("change", () => {
+      const checked = Array.from(document.querySelectorAll('input[name="c_mode_adopte"]:checked')).map(i => i.value);
+      cCovoit.classList.toggle("visible", checked.includes("Covoiturage"));
+      cVelo.classList.toggle("visible",   checked.includes("Vélo / VAE"));
     });
   });
 
   document.querySelectorAll('input[name="c_poursuivre"]').forEach(radio => {
     radio.addEventListener("change", e => {
       cNbJours.classList.toggle("visible", e.target.value === "Oui");
+    });
+  });
+
+  // Sous-question bloc A : afficher alternatives si "J'aurais aimé avoir une autre alternative" est coché
+  const aAltDiv = document.getElementById('a-alternative');
+  document.querySelectorAll('input[name="a_raisons"]').forEach(cb => {
+    cb.addEventListener("change", () => {
+      const checked = Array.from(document.querySelectorAll('input[name="a_raisons"]:checked')).map(i => i.value);
+      aAltDiv.classList.toggle("visible", checked.includes("J'aurais aimé avoir une autre alternative"));
     });
   });
 
@@ -509,6 +540,9 @@
   function radioValue(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
     return el ? el.value : '';
+  }
+  function checkboxValues(name) {
+    return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value).join('; ');
   }
 
   function validate(data) {
@@ -556,12 +590,13 @@
       QI_Intention_Changement:      radioValue('intention_changement'),
       QI_Raisons_Pas_Changement:    aRaisons.join('; '),
       QI_Raisons_Autre:             document.getElementById('a_raisons_autre').value.trim(),
-      QI_Mode_Envisage:             radioValue('b_mode_envisage'),
+      QI_Alternative_Souhaitee:     checkboxValues('a_alternative_souhaitee'),
+      QI_Mode_Envisage:             checkboxValues('b_mode_envisage'),
       QI_Nb_Jours_Envisage:         parseInt(document.getElementById('b_nb_jours').value) || null,
       QI_Echeance:                  radioValue('b_echeance'),
       QI_Contact_Collegue_Envisage: radioValue('b_contact_collegue'),
       QI_Frein:                     document.getElementById('b_frein').value.trim(),
-      QI_Mode_Adopte:               radioValue('c_mode_adopte'),
+      QI_Mode_Adopte:               checkboxValues('c_mode_adopte'),
       QI_Covoit_Collegue:           radioValue('c_covoit_collegue'),
       QI_Velo_Collegue:             radioValue('c_velo_collegue'),
       QI_Poursuivre:                radioValue('c_poursuivre'),
@@ -594,6 +629,7 @@
       );
       if (!res.ok) throw new Error(`Erreur ${res.status}`);
 
+      localStorage.setItem(STORAGE_KEY, '1');
       document.getElementById("questionnaire").style.display = "none";
       document.getElementById("successScreen").classList.add("visible");
       window.scrollTo({ top: 0, behavior: "smooth" });
