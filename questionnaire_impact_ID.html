@@ -205,7 +205,7 @@
       </div>
 
       <div class="field">
-        <p class="hint" style="margin-bottom:0.5rem">Après avoir répondu au questionnaire sur vos habitudes de trajets domicile-travail, vous avez reçu par email un bilan chiffré projetant vos trajets quotidiens sur un mois (km parcourus, coût, temps passé, CO₂ généré).</p>
+        <p style="margin-bottom:0.5rem">Après avoir répondu au questionnaire sur vos habitudes de trajets domicile-travail, vous avez reçu par email un bilan chiffré projetant vos trajets quotidiens sur un mois (km parcourus, coût, temps passé, CO₂ généré).</p>
         <span class="field-label">Ce bilan vous a-t-il paru juste par rapport à votre situation réelle ?</span>
         <div class="choices">
           <label class="choice"><input type="radio" name="bilan_juste" value="Oui"><span>Oui</span></label>
@@ -221,18 +221,28 @@
       </div>
 
       <div class="field">
-        <p class="hint" style="margin-bottom:0.5rem">Vous avez ensuite reçu par email une proposition d'alternative pour vos trajets, avec ses gains chiffrés (km, coût, temps, CO₂ économisés).</p>
+        <p style="margin-bottom:0.5rem">Vous avez ensuite reçu par email une proposition d'alternative pour vos trajets, avec ses gains chiffrés (km, coût, temps, CO₂ économisés).</p>
         <span class="field-label">Cette alternative vous a-t-elle paru pertinente au regard de votre situation (lieu de domicile, distance à parcourir, contraintes personnelles) ?</span>
         <div class="choices">
           <label class="choice"><input type="radio" name="suggestion_pertinente" value="Oui, c'est l'alternative la plus adaptée"><span>Oui, c'est l'alternative la plus adaptée à ma situation</span></label>
-          <label class="choice"><input type="radio" name="suggestion_pertinente" value="En partie, mais une autre alternative serait plus adaptée"><span>En partie, mais une autre alternative serait plus adaptée (précisez laquelle ci-dessous)</span></label>
+          <label class="choice"><input type="radio" name="suggestion_pertinente" value="Oui, connaissance d'une alternative adaptée"><span>Avez-vous connaissance d'une alternative plausible et adaptée à votre contexte (précisez laquelle ci-dessous)</span></label>
           <label class="choice"><input type="radio" name="suggestion_pertinente" value="Non, elle n'est pas adaptée à ma situation"><span>Non, elle n'est pas adaptée à ma situation</span></label>
           <label class="choice"><input type="radio" name="suggestion_pertinente" value="Je ne m'en souviens pas"><span>Je ne m'en souviens pas</span></label>
+        </div>
+
+        <!-- Sous-question : quelle alternative connue ? -->
+        <div class="conditional-sub" id="suggestion-alternative" style="margin-top:0.75rem;padding:1rem;background:#fafaff;border:1px dashed var(--bleu-france);border-radius:6px;">
+          <span class="field-label" style="font-size:0.9rem;margin-bottom:0.5rem">Quelle alternative ? <span class="hint">(plusieurs choix possibles)</span></span>
+          <div class="choices">
+            <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Vélo / VAE"><span>Vélo / VAE</span></label>
+            <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Covoiturage"><span>Covoiturage</span></label>
+            <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Transport en commun / Intermodalité"><span>Transport en commun / Intermodalité</span></label>
+          </div>
         </div>
       </div>
 
       <div class="field">
-        <label for="suggestion_pertinente_pourquoi">Pourquoi ? Si une autre alternative vous semble plus adaptée, précisez laquelle. <span class="hint">(facultatif)</span></label>
+        <label for="suggestion_pertinente_pourquoi">Pourquoi ? <span class="hint">(facultatif)</span></label>
         <textarea id="suggestion_pertinente_pourquoi" name="suggestion_pertinente_pourquoi"></textarea>
       </div>
     </div>
@@ -245,7 +255,7 @@
       <div class="field" id="field-intention_changement">
         <span class="field-label">Suite à votre participation, où en êtes-vous ? <span class="req">*</span></span>
         <div class="choices">
-          <label class="choice"><input type="radio" name="intention_changement" value="A"><span>Je n'ai pas prévu de changement</span></label>
+          <label class="choice"><input type="radio" name="intention_changement" value="A"><span>Je n'ai pas prévu / pas la possibilité de changer mes habitudes domicile-travail</span></label>
           <label class="choice"><input type="radio" name="intention_changement" value="B"><span>J'envisage de tester un nouveau mode de transport pour mes trajets domicile-travail</span></label>
           <label class="choice"><input type="radio" name="intention_changement" value="C"><span>J'ai déjà commencé à expérimenter un nouveau mode de transport pour mes trajets domicile-travail</span></label>
         </div>
@@ -258,22 +268,11 @@
             <span class="field-label">Pour quelle(s) raison(s) ? <span class="hint">(plusieurs choix possibles)</span></span>
             <div class="choices">
               <label class="choice"><input type="checkbox" name="a_raisons" value="Trajet inadapté (distance, horaires)"><span>Trajet inadapté (distance, horaires)</span></label>
-              <label class="choice"><input type="checkbox" name="a_raisons" value="J'aurais aimé avoir une autre alternative"><span>J'aurais aimé avoir une autre alternative</span></label>
-            </div>
-
-            <!-- Sous-question : quelle alternative souhaitée ? (apparaît juste après la case) -->
-            <div class="conditional-sub" id="a-alternative" style="margin-top:0.5rem;margin-bottom:0.5rem;padding:1rem;background:#fafaff;border:1px dashed var(--bleu-france);border-radius:6px;">
-              <span class="field-label" style="font-size:0.9rem;margin-bottom:0.5rem">Quelle alternative auriez-vous souhaité ? <span class="hint">(plusieurs choix possibles)</span></span>
-              <div class="choices">
-                <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Vélo / VAE"><span>Vélo / VAE</span></label>
-                <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Covoiturage"><span>Covoiturage</span></label>
-                <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Transport en commun / Intermodalité"><span>Transport en commun / Intermodalité</span></label>
-              </div>
             </div>
 
             <div class="choices">
               <label class="choice"><input type="checkbox" name="a_raisons" value="Contraintes personnelles / familiales"><span>Contraintes personnelles / familiales</span></label>
-              <label class="choice"><input type="checkbox" name="a_raisons" value="Pas trouvé de collègue compatible"><span>Pas trouvé de collègue compatible</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Je n'ai pas trouvé de covoitureur compatible"><span>Je n'ai pas trouvé de covoitureur compatible</span></label>
               <label class="choice"><input type="checkbox" name="a_raisons" value="Satisfait de mon mode actuel"><span>Satisfait de mon mode actuel</span></label>
               <label class="choice"><input type="checkbox" name="a_raisons" value="Besoin d'un accompagnement humain personnalisé pour changer"><span>Besoin d'un accompagnement humain personnalisé pour changer</span></label>
               <label class="choice"><input type="checkbox" name="a_raisons" value="Autre"><span>Autre</span></label>
@@ -508,12 +507,11 @@
     });
   });
 
-  // Sous-question bloc A : afficher alternatives si "J'aurais aimé avoir une autre alternative" est coché
-  const aAltDiv = document.getElementById('a-alternative');
-  document.querySelectorAll('input[name="a_raisons"]').forEach(cb => {
-    cb.addEventListener("change", () => {
-      const checked = Array.from(document.querySelectorAll('input[name="a_raisons"]:checked')).map(i => i.value);
-      aAltDiv.classList.toggle("visible", checked.includes("J'aurais aimé avoir une autre alternative"));
+  // Sous-question suggestion_pertinente : afficher checkboxes alternatives si option "connaissance" sélectionnée
+  const suggestionAltDiv = document.getElementById('suggestion-alternative');
+  document.querySelectorAll('input[name="suggestion_pertinente"]').forEach(radio => {
+    radio.addEventListener("change", e => {
+      suggestionAltDiv.classList.toggle("visible", e.target.value === "Oui, connaissance d'une alternative adaptée");
     });
   });
 
@@ -589,7 +587,7 @@
       QI_Intention_Changement:      radioValue('intention_changement'),
       QI_Raisons_Pas_Changement:    aRaisons.join('; '),
       QI_Raisons_Autre:             document.getElementById('a_raisons_autre').value.trim(),
-      QI_Alternative_Souhaitee:     checkboxValues('a_alternative_souhaitee'),
+      QI_Suggestion_Alternative:    checkboxValues('suggestion_alternative'),
       QI_Mode_Envisage:             checkboxValues('b_mode_envisage'),
       QI_Nb_Jours_Envisage:         parseInt(document.getElementById('b_nb_jours').value) || null,
       QI_Echeance:                  radioValue('b_echeance'),
