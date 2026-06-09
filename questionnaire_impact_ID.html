@@ -225,19 +225,20 @@
         <span class="field-label">Cette alternative vous a-t-elle paru pertinente au regard de votre situation (lieu de domicile, distance à parcourir, contraintes personnelles) ?</span>
         <div class="choices">
           <label class="choice"><input type="radio" name="suggestion_pertinente" value="Oui, c'est l'alternative la plus adaptée"><span>Oui, c'est l'alternative la plus adaptée à ma situation</span></label>
-          <label class="choice"><input type="radio" name="suggestion_pertinente" value="Oui, connaissance d'une alternative adaptée"><span>Avez-vous connaissance d'une alternative plausible et adaptée à votre contexte (précisez laquelle ci-dessous)</span></label>
+          <label class="choice"><input type="radio" name="suggestion_pertinente" value="Oui, connaissance d'une alternative adaptée"><span>Avez-vous connaissance d'une autre alternative plausible et adaptée à votre contexte</span></label>
+
+          <!-- Sous-question : quelle alternative connue ? -->
+          <div class="conditional-sub" id="suggestion-alternative" style="margin-left:0.5rem;margin-bottom:0.25rem;padding:1rem;background:#fafaff;border:1px dashed var(--bleu-france);border-radius:6px;">
+            <span class="field-label" style="font-size:0.9rem;margin-bottom:0.5rem">Quelle alternative ? <span class="hint">(plusieurs choix possibles)</span></span>
+            <div class="choices">
+              <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Vélo / VAE"><span>Vélo / VAE</span></label>
+              <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Covoiturage"><span>Covoiturage</span></label>
+              <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Transport en commun / Intermodalité"><span>Transport en commun / Intermodalité</span></label>
+            </div>
+          </div>
+
           <label class="choice"><input type="radio" name="suggestion_pertinente" value="Non, elle n'est pas adaptée à ma situation"><span>Non, elle n'est pas adaptée à ma situation</span></label>
           <label class="choice"><input type="radio" name="suggestion_pertinente" value="Je ne m'en souviens pas"><span>Je ne m'en souviens pas</span></label>
-        </div>
-
-        <!-- Sous-question : quelle alternative connue ? -->
-        <div class="conditional-sub" id="suggestion-alternative" style="margin-top:0.75rem;padding:1rem;background:#fafaff;border:1px dashed var(--bleu-france);border-radius:6px;">
-          <span class="field-label" style="font-size:0.9rem;margin-bottom:0.5rem">Quelle alternative ? <span class="hint">(plusieurs choix possibles)</span></span>
-          <div class="choices">
-            <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Vélo / VAE"><span>Vélo / VAE</span></label>
-            <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Covoiturage"><span>Covoiturage</span></label>
-            <label class="choice"><input type="checkbox" name="suggestion_alternative" value="Transport en commun / Intermodalité"><span>Transport en commun / Intermodalité</span></label>
-          </div>
         </div>
       </div>
 
@@ -424,7 +425,7 @@
 </div>
 
 <footer>
-  Mon Diag'Mob — une startup d'État ·
+  Mon Diag'Mob — la solution pour avoir une mobilité gagnante
 </footer>
 
 <script>
