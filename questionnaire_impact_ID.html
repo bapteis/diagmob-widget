@@ -15,12 +15,12 @@
   ─────────────────────────────────────────────────────────────
   Grist_ID                     Integer   ← clé de liaison avec DiagmobV2
   Date_Reponse                 Text
-  QI_Note_Utilisabilite        Integer
-  QI_Commentaire_Utilisabilite Text
   QI_Reflexion                 Text
   QI_Reflexion_Pourquoi        Text
-  QI_Perso_Juste               Text
-  QI_Perso_Juste_Pourquoi      Text
+  QI_Bilan_Juste               Text
+  QI_Bilan_Juste_Pourquoi      Text
+  QI_Suggestion_Pertinente     Text
+  QI_Suggestion_Pertinente_Pourquoi Text
   QI_Intention_Changement      Text   (valeur : A / B / C)
   QI_Raisons_Pas_Changement    Text   (valeurs séparées par ;)
   QI_Raisons_Autre             Text
@@ -177,8 +177,8 @@
 
   <div class="intro">
     <p><strong>Vos retours sont essentiels — 3 minutes !</strong></p>
-    <p>Vous avez participé à l'expérimentation Mon Diag'Mob, et votre avis nous est précieux. Qu'ils soient critiques ou positifs, tous vos retours comptent : ils nous permettront de mesurer l'impact réel du dispositif et de l'améliorer pour les prochains agents. Ensemble, avançons vers une mobilité gagnante !</p>
-    <p><em>Vos réponses sont uniquement à destination de Mon Diag'Mob.</em></p>
+    <p>Critiques ou positifs, tous vos retours comptent : ils nous aident à mesurer l'impact du dispositif et à l'améliorer. Ensemble, avançons vers une mobilité gagnante !</p>
+    <p class="intro-mention">Vos réponses restent confidentielles : croisées avec celles du premier questionnaire, elles ne sont exploitées que de façon agrégée pour mesurer l'impact global du dispositif.</p>
     <p class="intro-mention">Les champs marqués d'un <span style="color:var(--rouge-marianne)">*</span> sont obligatoires.</p>
   </div>
 
@@ -187,24 +187,6 @@
     <!-- SECTION 1 -->
     <div class="section">
       <span class="section-num">Partie 1</span>
-      <h2>Le dispositif</h2>
-
-      <div class="field" id="field-note_utilisabilite">
-        <span class="field-label">Comment évaluez-vous la facilité d'utilisation du dispositif Mon Diag'Mob ? <em>(bonne réception des emails, compréhension des chiffres, affichage de la cartographie)</em> <span class="req">*</span></span>
-        <div class="scale" data-scale="1-10" data-name="note_utilisabilite"></div>
-        <div class="scale-ends"><span>1 — Très difficile</span><span>10 — Très facile</span></div>
-        <div class="field-error" id="error-note_utilisabilite">Veuillez attribuer une note.</div>
-      </div>
-
-      <div class="field">
-        <label for="utilisabilite_commentaire">Qu'est-ce qui a rendu le dispositif facile ou difficile à utiliser ? <span class="hint">(facultatif)</span></label>
-        <textarea id="utilisabilite_commentaire" name="utilisabilite_commentaire"></textarea>
-      </div>
-    </div>
-
-    <!-- SECTION 2 -->
-    <div class="section">
-      <span class="section-num">Partie 2</span>
       <h2>Votre perception de nos emails de communication</h2>
 
       <div class="field" id="field-reflexion">
@@ -222,26 +204,42 @@
         <textarea id="reflexion_pourquoi" name="reflexion_pourquoi"></textarea>
       </div>
 
-      <div class="field" id="field-perso_juste">
-        <span class="field-label">Les informations chiffrées du bilan vous ont-elles paru justes par rapport à votre situation ? <span class="req">*</span></span>
+      <div class="field">
+        <p class="hint" style="margin-bottom:0.5rem">Après avoir répondu au questionnaire sur vos habitudes de trajets domicile-travail, vous avez reçu par email un bilan chiffré projetant vos trajets quotidiens sur un mois (km parcourus, coût, temps passé, CO₂ généré).</p>
+        <span class="field-label">Ce bilan vous a-t-il paru juste par rapport à votre situation réelle ?</span>
         <div class="choices">
-          <label class="choice"><input type="radio" name="perso_juste" value="Oui"><span>Oui</span></label>
-          <label class="choice"><input type="radio" name="perso_juste" value="En partie seulement"><span>En partie seulement</span></label>
-          <label class="choice"><input type="radio" name="perso_juste" value="Non"><span>Non</span></label>
-          <label class="choice"><input type="radio" name="perso_juste" value="Je ne m'en souviens plus"><span>Je ne m'en souviens plus</span></label>
+          <label class="choice"><input type="radio" name="bilan_juste" value="Oui"><span>Oui</span></label>
+          <label class="choice"><input type="radio" name="bilan_juste" value="En partie seulement"><span>En partie seulement</span></label>
+          <label class="choice"><input type="radio" name="bilan_juste" value="Non"><span>Non</span></label>
+          <label class="choice"><input type="radio" name="bilan_juste" value="Je ne m'en souviens pas"><span>Je ne m'en souviens pas</span></label>
         </div>
-        <div class="field-error" id="error-perso_juste">Veuillez choisir une réponse.</div>
       </div>
 
       <div class="field">
-        <label for="perso_juste_pourquoi">Pourquoi ? <span class="hint">(facultatif)</span></label>
-        <textarea id="perso_juste_pourquoi" name="perso_juste_pourquoi"></textarea>
+        <label for="bilan_juste_pourquoi">Pourquoi ? <span class="hint">(facultatif)</span></label>
+        <textarea id="bilan_juste_pourquoi" name="bilan_juste_pourquoi"></textarea>
+      </div>
+
+      <div class="field">
+        <p class="hint" style="margin-bottom:0.5rem">Vous avez ensuite reçu par email une proposition d'alternative pour vos trajets, avec ses gains chiffrés (km, coût, temps, CO₂ économisés).</p>
+        <span class="field-label">Cette alternative vous a-t-elle paru pertinente au regard de votre situation (lieu de domicile, distance à parcourir, contraintes personnelles) ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="suggestion_pertinente" value="Oui, c'est l'alternative la plus adaptée"><span>Oui, c'est l'alternative la plus adaptée à ma situation</span></label>
+          <label class="choice"><input type="radio" name="suggestion_pertinente" value="En partie, mais une autre alternative serait plus adaptée"><span>En partie, mais une autre alternative serait plus adaptée (précisez laquelle ci-dessous)</span></label>
+          <label class="choice"><input type="radio" name="suggestion_pertinente" value="Non, elle n'est pas adaptée à ma situation"><span>Non, elle n'est pas adaptée à ma situation</span></label>
+          <label class="choice"><input type="radio" name="suggestion_pertinente" value="Je ne m'en souviens pas"><span>Je ne m'en souviens pas</span></label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="suggestion_pertinente_pourquoi">Pourquoi ? Si une autre alternative vous semble plus adaptée, précisez laquelle. <span class="hint">(facultatif)</span></label>
+        <textarea id="suggestion_pertinente_pourquoi" name="suggestion_pertinente_pourquoi"></textarea>
       </div>
     </div>
 
     <!-- SECTION 3 -->
     <div class="section">
-      <span class="section-num">Partie 3</span>
+      <span class="section-num">Partie 2</span>
       <h2>Votre mobilité aujourd'hui</h2>
 
       <div class="field" id="field-intention_changement">
@@ -261,21 +259,24 @@
             <div class="choices">
               <label class="choice"><input type="checkbox" name="a_raisons" value="Trajet inadapté (distance, horaires)"><span>Trajet inadapté (distance, horaires)</span></label>
               <label class="choice"><input type="checkbox" name="a_raisons" value="J'aurais aimé avoir une autre alternative"><span>J'aurais aimé avoir une autre alternative</span></label>
-              <label class="choice"><input type="checkbox" name="a_raisons" value="Contraintes personnelles / familiales"><span>Contraintes personnelles / familiales</span></label>
-              <label class="choice"><input type="checkbox" name="a_raisons" value="Pas trouvé de collègue compatible"><span>Pas trouvé de collègue compatible</span></label>
-              <label class="choice"><input type="checkbox" name="a_raisons" value="Satisfait de mon mode actuel"><span>Satisfait de mon mode actuel</span></label>
-              <label class="choice"><input type="checkbox" name="a_raisons" value="Besoin d'un accompagnement humain personnalisé pour changer"><span>Besoin d'un accompagnement humain personnalisé pour changer</span></label>
-              <label class="choice"><input type="checkbox" name="a_raisons" value="Autre"><span>Autre</span></label>
             </div>
 
-            <!-- Sous-question : quelle alternative souhaitée ? -->
-            <div class="conditional-sub" id="a-alternative" style="margin-top:1rem;padding:1rem;background:#fafaff;border:1px dashed var(--bleu-france);border-radius:6px;">
+            <!-- Sous-question : quelle alternative souhaitée ? (apparaît juste après la case) -->
+            <div class="conditional-sub" id="a-alternative" style="margin-top:0.5rem;margin-bottom:0.5rem;padding:1rem;background:#fafaff;border:1px dashed var(--bleu-france);border-radius:6px;">
               <span class="field-label" style="font-size:0.9rem;margin-bottom:0.5rem">Quelle alternative auriez-vous souhaité ? <span class="hint">(plusieurs choix possibles)</span></span>
               <div class="choices">
                 <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Vélo / VAE"><span>Vélo / VAE</span></label>
                 <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Covoiturage"><span>Covoiturage</span></label>
                 <label class="choice"><input type="checkbox" name="a_alternative_souhaitee" value="Transport en commun / Intermodalité"><span>Transport en commun / Intermodalité</span></label>
               </div>
+            </div>
+
+            <div class="choices">
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Contraintes personnelles / familiales"><span>Contraintes personnelles / familiales</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Pas trouvé de collègue compatible"><span>Pas trouvé de collègue compatible</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Satisfait de mon mode actuel"><span>Satisfait de mon mode actuel</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Besoin d'un accompagnement humain personnalisé pour changer"><span>Besoin d'un accompagnement humain personnalisé pour changer</span></label>
+              <label class="choice"><input type="checkbox" name="a_raisons" value="Autre"><span>Autre</span></label>
             </div>
           </div>
           <div class="field">
@@ -385,11 +386,11 @@
 
     <!-- SECTION 4 -->
     <div class="section">
-      <span class="section-num">Partie 4</span>
+      <span class="section-num">Partie 3</span>
       <h2>Votre avis libre</h2>
 
       <div class="field" id="field-note_globale">
-        <span class="field-label">Au global, comment noteriez-vous la qualité du dispositif ? <span class="req">*</span></span>
+        <span class="field-label">Au global, comment noteriez-vous la qualité du dispositif Mon Diag'Mob ? <span class="req">*</span></span>
         <div class="scale" data-scale="1-10" data-name="note_globale"></div>
         <div class="scale-ends"><span>1 — Très faible</span><span>10 — Excellente</span></div>
         <div class="field-error" id="error-note_globale">Veuillez attribuer une note.</div>
@@ -546,9 +547,7 @@
   }
 
   function validate(data) {
-    if (!data.QI_Note_Utilisabilite)    return showError('note_utilisabilite');
     if (!data.QI_Reflexion)             return showError('reflexion');
-    if (!data.QI_Perso_Juste)           return showError('perso_juste');
     if (!data.QI_Intention_Changement)  return showError('intention_changement');
 
     const intent = data.QI_Intention_Changement;
@@ -581,12 +580,12 @@
     const aRaisons = Array.from(document.querySelectorAll('input[name="a_raisons"]:checked')).map(i => i.value);
 
     const data = {
-      QI_Note_Utilisabilite:        parseInt(radioValue('note_utilisabilite')) || null,
-      QI_Commentaire_Utilisabilite: document.getElementById('utilisabilite_commentaire').value.trim(),
       QI_Reflexion:                 radioValue('reflexion'),
       QI_Reflexion_Pourquoi:        document.getElementById('reflexion_pourquoi').value.trim(),
-      QI_Perso_Juste:               radioValue('perso_juste'),
-      QI_Perso_Juste_Pourquoi:      document.getElementById('perso_juste_pourquoi').value.trim(),
+      QI_Bilan_Juste:                    radioValue('bilan_juste'),
+      QI_Bilan_Juste_Pourquoi:           document.getElementById('bilan_juste_pourquoi').value.trim(),
+      QI_Suggestion_Pertinente:          radioValue('suggestion_pertinente'),
+      QI_Suggestion_Pertinente_Pourquoi: document.getElementById('suggestion_pertinente_pourquoi').value.trim(),
       QI_Intention_Changement:      radioValue('intention_changement'),
       QI_Raisons_Pas_Changement:    aRaisons.join('; '),
       QI_Raisons_Autre:             document.getElementById('a_raisons_autre').value.trim(),
