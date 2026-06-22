@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Diag'Mob — Questionnaire référents mobilité</title>
+<style>
+  :root {
+    --bleu-france: #000091;
+    --rouge-marianne: #E1000F;
+    --lavande: #ECECFE;
+    --gris-fond: #f6f6f6;
+    --gris-bordure: #ddd;
+    --gris-texte: #3a3a3a;
+    --gris-clair: #666;
+    --blanc: #ffffff;
+    --vert-succes: #18753c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Marianne", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--gris-texte); background: var(--gris-fond); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .header { background: var(--blanc); border-bottom: 1px solid var(--gris-bordure); box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+  .header-inner { max-width: 780px; margin: 0 auto; padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 1.25rem; }
+  .header img { display: block; height: auto; }
+  .header-titles { border-left: 2px solid var(--gris-bordure); padding-left: 1.25rem; }
+  .header-titles h1 { font-size: 1.15rem; color: var(--bleu-france); font-weight: 700; line-height: 1.3; }
+  .header-titles p { font-size: 0.85rem; color: var(--gris-clair); margin-top: 0.15rem; }
+
+  .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .intro { background: var(--lavande); border-left: 4px solid var(--bleu-france); padding: 1.25rem 1.5rem; border-radius: 0 4px 4px 0; margin-bottom: 2.5rem; }
+  .intro p { font-size: 0.95rem; }
+  .intro p + p { margin-top: 0.6rem; }
+  .intro strong { color: var(--bleu-france); }
+  .intro-mention { font-size: 0.82rem; color: var(--gris-clair); }
+
+  .section { background: var(--blanc); border: 1px solid var(--gris-bordure); border-radius: 6px; padding: 1.75rem; margin-bottom: 1.5rem; }
+  .section-num { display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--bleu-france); background: var(--lavande); padding: 0.2rem 0.6rem; border-radius: 4px; margin-bottom: 0.75rem; }
+  .section h2 { font-size: 1.2rem; color: var(--gris-texte); margin-bottom: 1.25rem; font-weight: 700; }
+
+  .field { margin-bottom: 1.5rem; }
+  .field:last-child { margin-bottom: 0; }
+  .field > label, .field > .field-label { display: block; font-weight: 600; font-size: 0.98rem; margin-bottom: 0.5rem; }
+  .field .hint { font-weight: 400; color: var(--gris-clair); font-size: 0.85rem; }
+
+  input[type="text"], input[type="number"], textarea, select {
+    width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #929292; border-bottom: 2px solid var(--bleu-france);
+    border-radius: 4px 4px 0 0; background: #eee; font-family: inherit; font-size: 0.95rem; color: var(--gris-texte);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--bleu-france); outline-offset: 2px; }
+
+  .scale { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+  .scale input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .scale label { display: flex; align-items: center; justify-content: center; width: 2.6rem; height: 2.6rem; border: 1px solid var(--gris-bordure); border-radius: 4px; cursor: pointer; font-weight: 600; background: var(--blanc); transition: all 0.12s ease; user-select: none; }
+  .scale label:hover { border-color: var(--bleu-france); }
+  .scale input:checked + label { background: var(--bleu-france); color: var(--blanc); border-color: var(--bleu-france); }
+  .scale-ends { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--gris-clair); margin-top: 0.4rem; }
+
+  .choices { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+  .choice { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.65rem 0.85rem; border: 1px solid var(--gris-bordure); border-radius: 4px; cursor: pointer; transition: all 0.12s ease; }
+  .choice:hover { border-color: var(--bleu-france); background: #fafaff; }
+  .choice input { margin-top: 0.25rem; accent-color: var(--bleu-france); width: 1.05rem; height: 1.05rem; flex-shrink: 0; }
+  .choice span { font-size: 0.95rem; }
+
+  .conditional { display: none; margin-top: 1.25rem; padding: 1.25rem; background: #fafaff; border: 1px dashed var(--bleu-france); border-radius: 6px; animation: reveal 0.25s ease; }
+  .conditional.visible { display: block; }
+  .conditional-sub { display: none; }
+  .conditional-sub.visible { display: block; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .conditional-tag { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--bleu-france); margin-bottom: 1rem; display: block; }
+
+  .submit-zone { text-align: center; margin-top: 2rem; }
+  .btn-submit { background: var(--bleu-france); color: var(--blanc); border: none; padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 600; font-family: inherit; border-radius: 4px; cursor: pointer; transition: background 0.15s ease; }
+  .btn-submit:hover { background: #00006d; }
+  .btn-submit:disabled { background: #929292; cursor: not-allowed; }
+
+  .feedback { margin-top: 1.25rem; padding: 1rem 1.25rem; border-radius: 4px; font-weight: 600; display: none; }
+  .feedback.err { display: block; background: #ffe9e9; color: var(--rouge-marianne); border-left: 4px solid var(--rouge-marianne); }
+
+  .success-screen { display: none; text-align: center; padding: 3rem 1.5rem; }
+  .success-screen.visible { display: block; }
+  .success-screen .check { width: 64px; height: 64px; margin: 0 auto 1.5rem; background: var(--vert-succes); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 2rem; }
+  .success-screen h2 { color: var(--bleu-france); margin-bottom: 0.75rem; }
+
+  footer { text-align: center; font-size: 0.8rem; color: var(--gris-clair); padding: 1.5rem; }
+
+  @media (max-width: 560px) {
+    .header-inner { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .header-titles { border-left: none; padding-left: 0; }
+    .scale label { width: 2.2rem; height: 2.2rem; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <img src="https://static.covoiturage.beta.gouv.fr/Logo_M_Tx_MDM_fb9df9f2ba.png" width="260" height="100" alt="Mon Diag'Mob — Ministère de la Transition écologique" />
+    <div class="header-titles">
+      <h1>Questionnaire référents mobilité</h1>
+      <p>Votre retour sur le dispositif Mon Diag'Mob</p>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="intro">
+    <p><strong>Votre retour est essentiel — 5 minutes !</strong></p>
+    <p>En tant que référent mobilité, votre regard sur le dispositif est précieux : il nous permet de mesurer son utilité pour votre administration et de l'améliorer.</p>
+    <p class="intro-mention">Vos réponses restent confidentielles : croisées avec les données de l'expérimentation, elles ne sont exploitées que de façon agrégée pour mesurer l'impact global du dispositif. Aucun retour individuel n'est analysé ni communiqué.</p>
+  </div>
+
+  <form id="questionnaire">
+
+    <!-- PARTIE 1 -->
+    <div class="section">
+      <span class="section-num">Partie 1</span>
+      <h2>Votre contexte</h2>
+
+      <div class="field">
+        <label for="administration">Quelle administration représentez-vous ?</label>
+        <input type="text" id="administration" name="administration">
+      </div>
+      <div class="field">
+        <label for="fonction">Quelle est votre fonction / intitulé de poste ?</label>
+        <input type="text" id="fonction" name="fonction">
+      </div>
+      <div class="field">
+        <span class="field-label">La mobilité durable représente, dans votre poste…</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="role_mobilite" value="Une mission à temps plein"><span>Une mission à temps plein</span></label>
+          <label class="choice"><input type="radio" name="role_mobilite" value="Une mission parmi d'autres"><span>Une mission parmi d'autres</span></label>
+          <label class="choice"><input type="radio" name="role_mobilite" value="Une mission récente / nouvellement confiée"><span>Une mission récente / nouvellement confiée</span></label>
+          <label class="choice"><input type="radio" name="role_mobilite" value="Autre"><span>Autre</span></label>
+        </div>
+        <div class="field conditional-sub" id="role-autre" style="margin-top:1rem">
+          <label for="role_mobilite_autre">Pouvez-vous préciser ?</label>
+          <input type="text" id="role_mobilite_autre" name="role_mobilite_autre">
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTIE 2 -->
+    <div class="section">
+      <span class="section-num">Partie 2</span>
+      <h2>Vos motivations</h2>
+
+      <div class="field">
+        <label for="raison_participation">Pourquoi avez-vous souhaité participer à l'expérimentation Mon Diag'Mob ?</label>
+        <textarea id="raison_participation" name="raison_participation"></textarea>
+      </div>
+      <div class="field">
+        <label for="resultats_attendus">Quels résultats espériez-vous obtenir en participant ?</label>
+        <textarea id="resultats_attendus" name="resultats_attendus"></textarea>
+      </div>
+    </div>
+
+    <!-- PARTIE 3 -->
+    <div class="section">
+      <span class="section-num">Partie 3</span>
+      <h2>Votre cadre d'action</h2>
+
+      <div class="field">
+        <span class="field-label">Avez-vous un objectif fixé par votre hiérarchie sur la problématique des trajets domicile-travail ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="objectif_hierarchie" value="Oui"><span>Oui</span></label>
+          <label class="choice"><input type="radio" name="objectif_hierarchie" value="Non"><span>Non</span></label>
+        </div>
+
+        <div class="conditional" id="obj-oui">
+          <span class="conditional-tag">▸ Objectif fixé</span>
+          <div class="field">
+            <label for="objectif_lequel">Quel est cet objectif ?</label>
+            <input type="text" id="objectif_lequel" name="objectif_lequel">
+          </div>
+          <div class="field">
+            <label for="objectif_budget">Quel budget avez-vous pour l'atteindre ?</label>
+            <input type="text" id="objectif_budget" name="objectif_budget">
+          </div>
+        </div>
+
+        <div class="conditional" id="obj-non">
+          <span class="conditional-tag">▸ Pas d'objectif fixé</span>
+          <div class="field">
+            <label for="objectif_non_detail">Vous voulez préciser ? <span class="hint">(facultatif)</span></label>
+            <textarea id="objectif_non_detail" name="objectif_non_detail"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Avez-vous un plan de mobilité employeur (ou multi-sites), ou en est-il prévu un ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="pdm_existant" value="Oui"><span>Oui</span></label>
+          <label class="choice"><input type="radio" name="pdm_existant" value="Non"><span>Non</span></label>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Sans la solution Mon Diag'Mob, auriez-vous mis en place des actions pour décarboner les trajets domicile-travail de vos agents ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="contrefactuel" value="Oui, des actions équivalentes"><span>Oui, des actions équivalentes</span></label>
+          <label class="choice"><input type="radio" name="contrefactuel" value="Oui, mais des actions plus limitées"><span>Oui, mais des actions plus limitées</span></label>
+          <label class="choice"><input type="radio" name="contrefactuel" value="Non, probablement pas"><span>Non, probablement pas</span></label>
+          <label class="choice"><input type="radio" name="contrefactuel" value="Je ne sais pas"><span>Je ne sais pas</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="contrefactuel_detail">Pouvez-vous préciser ? (quelles actions, ou pourquoi pas) <span class="hint">(facultatif)</span></label>
+        <textarea id="contrefactuel_detail" name="contrefactuel_detail"></textarea>
+      </div>
+    </div>
+
+    <!-- PARTIE 4 -->
+    <div class="section">
+      <span class="section-num">Partie 4</span>
+      <h2>Mise en place</h2>
+
+      <div class="field">
+        <span class="field-label">Combien de temps vous a pris la mise en place de l'expérimentation ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="temps_mise_en_place" value="Moins d'une demi-journée"><span>Moins d'une demi-journée</span></label>
+          <label class="choice"><input type="radio" name="temps_mise_en_place" value="1 à 2 jours"><span>1 à 2 jours</span></label>
+          <label class="choice"><input type="radio" name="temps_mise_en_place" value="3 à 5 jours"><span>3 à 5 jours</span></label>
+          <label class="choice"><input type="radio" name="temps_mise_en_place" value="Plus de 5 jours"><span>Plus de 5 jours</span></label>
+          <label class="choice"><input type="radio" name="temps_mise_en_place" value="Difficile à évaluer"><span>Difficile à évaluer</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="field-label">Au regard des bénéfices obtenus, comment évaluez-vous le temps que vous avez investi ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="charge_vs_benefice" value="Largement rentabilisé"><span>Largement rentabilisé</span></label>
+          <label class="choice"><input type="radio" name="charge_vs_benefice" value="Plutôt rentabilisé"><span>Plutôt rentabilisé</span></label>
+          <label class="choice"><input type="radio" name="charge_vs_benefice" value="Équilibré"><span>Équilibré</span></label>
+          <label class="choice"><input type="radio" name="charge_vs_benefice" value="Plutôt trop élevé"><span>Plutôt trop élevé</span></label>
+          <label class="choice"><input type="radio" name="charge_vs_benefice" value="Beaucoup trop élevé"><span>Beaucoup trop élevé</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="charge_commentaire">Un commentaire sur la charge de travail ? <span class="hint">(facultatif)</span></label>
+        <textarea id="charge_commentaire" name="charge_commentaire"></textarea>
+      </div>
+    </div>
+
+    <!-- PARTIE 5 -->
+    <div class="section">
+      <span class="section-num">Partie 5</span>
+      <h2>Tableaux de bord</h2>
+
+      <div class="field">
+        <span class="field-label">Avez-vous utilisé les tableaux de bord mis à votre disposition ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="usage_tdb" value="Oui"><span>Oui</span></label>
+          <label class="choice"><input type="radio" name="usage_tdb" value="Non"><span>Non</span></label>
+        </div>
+
+        <div class="conditional" id="tdb-oui">
+          <span class="conditional-tag">▸ Usage des tableaux de bord</span>
+          <div class="field">
+            <span class="field-label">Pour quels usages ? <span class="hint">(plusieurs choix possibles)</span></span>
+            <div class="choices">
+              <label class="choice"><input type="checkbox" name="tdb_usages" value="Suivi de la participation des agents"><span>Suivi de la participation des agents</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_usages" value="Pilotage / reporting interne"><span>Pilotage / reporting interne</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_usages" value="Communication auprès de la direction"><span>Communication auprès de la direction</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_usages" value="Communication auprès des agents"><span>Communication auprès des agents</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_usages" value="Alimentation du PDM"><span>Alimentation du PDM</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_usages" value="Autre"><span>Autre</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="tdb_indicateurs_utiles">Quels indicateurs vous ont été les plus utiles ? <span class="hint">(<a href="https://grist.incubateur.dnum.din.developpement-durable.gouv.fr/o/diagmob/cfiCVUp2f85M/Formulaire-DiagMob/p/7" target="_blank" rel="noopener" style="color:var(--bleu-france)">voir le tableau de bord</a>)</span></label>
+            <textarea id="tdb_indicateurs_utiles" name="tdb_indicateurs_utiles"></textarea>
+          </div>
+          <div class="field">
+            <label for="tdb_manques">Quels indicateurs ou fonctionnalités vous ont manqué ? <span class="hint">(facultatif)</span></label>
+            <textarea id="tdb_manques" name="tdb_manques"></textarea>
+          </div>
+        </div>
+
+        <div class="conditional" id="tdb-non">
+          <span class="conditional-tag">▸ Non utilisés</span>
+          <div class="field">
+            <span class="field-label">Pour quelle(s) raison(s) ne les avez-vous pas utilisés ? <span class="hint">(plusieurs choix possibles)</span></span>
+            <div class="choices">
+              <label class="choice"><input type="checkbox" name="tdb_non_raisons" value="Je n'en ai pas eu connaissance"><span>Je n'en ai pas eu connaissance</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_non_raisons" value="Pas eu le temps"><span>Pas eu le temps</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_non_raisons" value="Pas adaptés à mes besoins"><span>Pas adaptés à mes besoins</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_non_raisons" value="Difficiles à prendre en main"><span>Difficiles à prendre en main</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_non_raisons" value="Données pas assez fiables / complètes"><span>Données pas assez fiables / complètes</span></label>
+              <label class="choice"><input type="checkbox" name="tdb_non_raisons" value="Autre"><span>Autre</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="tdb_non_detail">Pouvez-vous préciser ? <span class="hint">(facultatif)</span></label>
+            <textarea id="tdb_non_detail" name="tdb_non_detail"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTIE 6 -->
+    <div class="section">
+      <span class="section-num">Partie 6</span>
+      <h2>Plan de mobilité</h2>
+
+      <div class="field">
+        <span class="field-label">Quel impact le dispositif aura-t-il eu sur votre Plan de Mobilité Employeur (PDM) ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="impact_pdm" value="Impact fort et concret"><span>Impact fort et concret</span></label>
+          <label class="choice"><input type="radio" name="impact_pdm" value="Impact modéré"><span>Impact modéré</span></label>
+          <label class="choice"><input type="radio" name="impact_pdm" value="Impact faible"><span>Impact faible</span></label>
+          <label class="choice"><input type="radio" name="impact_pdm" value="Aucun impact"><span>Aucun impact</span></label>
+          <label class="choice"><input type="radio" name="impact_pdm" value="Nous n'avons pas encore de PDM"><span>Nous n'avons pas encore de PDM</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="impact_pdm_detail">Pouvez-vous préciser cet impact ? <span class="hint">(facultatif)</span></label>
+        <textarea id="impact_pdm_detail" name="impact_pdm_detail"></textarea>
+      </div>
+      <div class="field">
+        <span class="field-label">Des actions concrètes vont-elles découler du dispositif ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="actions_decoulent" value="Oui, déjà engagées"><span>Oui, déjà engagées</span></label>
+          <label class="choice"><input type="radio" name="actions_decoulent" value="Oui, prévues"><span>Oui, prévues</span></label>
+          <label class="choice"><input type="radio" name="actions_decoulent" value="Peut-être / à l'étude"><span>Peut-être / à l'étude</span></label>
+          <label class="choice"><input type="radio" name="actions_decoulent" value="Non"><span>Non</span></label>
+        </div>
+        <div class="field conditional-sub" id="actions-detail" style="margin-top:1rem">
+          <label for="actions_lesquelles">Si oui, lesquelles ?</label>
+          <textarea id="actions_lesquelles" name="actions_lesquelles"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTIE 7 -->
+    <div class="section">
+      <span class="section-num">Partie 7</span>
+      <h2>Satisfaction</h2>
+
+      <div class="field">
+        <span class="field-label">Au global, quelle note de satisfaction donneriez-vous au dispositif ?</span>
+        <div class="scale" data-scale="1-10" data-name="note_globale"></div>
+        <div class="scale-ends"><span>1 — Très insatisfait</span><span>10 — Très satisfait</span></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Recommanderiez-vous Mon Diag'Mob à une autre administration ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="recommandation" value="Oui, sans hésiter"><span>Oui, sans hésiter</span></label>
+          <label class="choice"><input type="radio" name="recommandation" value="Oui, probablement"><span>Oui, probablement</span></label>
+          <label class="choice"><input type="radio" name="recommandation" value="Peut-être"><span>Peut-être</span></label>
+          <label class="choice"><input type="radio" name="recommandation" value="Probablement pas"><span>Probablement pas</span></label>
+          <label class="choice"><input type="radio" name="recommandation" value="Non"><span>Non</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="recommandation_raison">Quelle est la principale raison de votre réponse ? <span class="hint">(facultatif)</span></label>
+        <textarea id="recommandation_raison" name="recommandation_raison"></textarea>
+      </div>
+      <div class="field">
+        <span class="field-label">Connaissez-vous d'autres solutions qui adressent la problématique des trajets domicile-travail et qui aient des performances identiques ou supérieures à Mon Diag'Mob ?</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="autres_dispositifs" value="Oui"><span>Oui</span></label>
+          <label class="choice"><input type="radio" name="autres_dispositifs" value="Non"><span>Non</span></label>
+        </div>
+        <div class="field conditional-sub" id="autres-detail" style="margin-top:1rem">
+          <label for="autres_dispositifs_detail">Si oui, lesquelles, et en quoi sont-elles identiques ou plus performantes ?</label>
+          <textarea id="autres_dispositifs_detail" name="autres_dispositifs_detail"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-zone">
+      <button type="submit" class="btn-submit" id="btnSubmit">Envoyer mes réponses</button>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+  </form>
+
+  <div class="success-screen" id="successScreen">
+    <div class="check">✓</div>
+    <h2>Merci pour votre participation !</h2>
+    <p>Vos réponses ont bien été enregistrées. Elles contribueront directement à l'évaluation et à l'amélioration du dispositif Mon Diag'Mob.</p>
+  </div>
+
+</div>
+
+<footer>
+  Mon Diag'Mob — une startup d'État · Conforme aux Services publics écoresponsables (SPE)
+</footer>
+
+<script>
+  // ===================================================================
+  // CONFIGURATION — À PERSONNALISER AVANT DÉPLOIEMENT
+  // URL du webhook n8n (Production URL). n8n écrit dans Grist côté
+  // serveur : aucune clé API n'est exposée dans cette page.
+  // ===================================================================
+  const WEBHOOK_URL = "https://VOTRE-INSTANCE-n8n/webhook/mondiagmob-referents";
+
+  // --- Génération dynamique des échelles ---
+  document.querySelectorAll(".scale").forEach(scale => {
+    const range = scale.dataset.scale;
+    const name = scale.dataset.name;
+    const start = range === "0-10" ? 0 : 1;
+    for (let i = start; i <= 10; i++) {
+      const id = name + "_" + i;
+      const input = document.createElement("input");
+      input.type = "radio"; input.name = name; input.value = i; input.id = id;
+      const label = document.createElement("label");
+      label.setAttribute("for", id); label.textContent = i;
+      scale.appendChild(input); scale.appendChild(label);
+    }
+  });
+
+  // --- Helper : affiche/masque un conteneur selon la valeur d'un groupe radio ---
+  function toggleOn(radioName, map) {
+    document.querySelectorAll('input[name="' + radioName + '"]').forEach(radio => {
+      radio.addEventListener("change", e => {
+        Object.values(map).forEach(el => el && el.classList.remove("visible"));
+        const target = map[e.target.value];
+        if (target) target.classList.add("visible");
+      });
+    });
+  }
+
+  // P1 — rôle "Autre"
+  toggleOn("role_mobilite", { "Autre": document.getElementById("role-autre") });
+
+  // P3 — objectif hiérarchie Oui/Non
+  toggleOn("objectif_hierarchie", {
+    "Oui": document.getElementById("obj-oui"),
+    "Non": document.getElementById("obj-non")
+  });
+
+  // P5 — usage tableaux de bord Oui/Non
+  toggleOn("usage_tdb", {
+    "Oui": document.getElementById("tdb-oui"),
+    "Non": document.getElementById("tdb-non")
+  });
+
+  // P6 — actions : afficher détail sauf si "Non"
+  const actionsDetail = document.getElementById("actions-detail");
+  document.querySelectorAll('input[name="actions_decoulent"]').forEach(radio => {
+    radio.addEventListener("change", e => {
+      actionsDetail.classList.toggle("visible", e.target.value !== "Non");
+    });
+  });
+
+  // P7 — autres dispositifs : détail si "Oui"
+  const autresDetail = document.getElementById("autres-detail");
+  document.querySelectorAll('input[name="autres_dispositifs"]').forEach(radio => {
+    radio.addEventListener("change", e => {
+      autresDetail.classList.toggle("visible", e.target.value === "Oui");
+    });
+  });
+
+  // --- Soumission ---
+  const form = document.getElementById("questionnaire");
+  const feedback = document.getElementById("feedback");
+  const btn = document.getElementById("btnSubmit");
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    feedback.className = "feedback";
+    feedback.textContent = "";
+
+    const data = {};
+    const fd = new FormData(form);
+    for (const [key, value] of fd.entries()) {
+      if (data[key]) {
+        if (Array.isArray(data[key])) data[key].push(value);
+        else data[key] = [data[key], value];
+      } else {
+        data[key] = value;
+      }
+    }
+    data.horodatage = new Date().toISOString();
+
+    btn.disabled = true;
+    btn.textContent = "Envoi en cours…";
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      form.style.display = "none";
+      document.getElementById("successScreen").classList.add("visible");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      feedback.className = "feedback err";
+      feedback.textContent = "Une erreur est survenue lors de l'envoi. Merci de réessayer dans quelques instants.";
+      btn.disabled = false;
+      btn.textContent = "Envoyer mes réponses";
+    }
+  });
+</script>
+
+</body>
+</html>
