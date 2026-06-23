@@ -395,11 +395,12 @@
 
 <script>
   // ===================================================================
-  // CONFIGURATION — À PERSONNALISER AVANT DÉPLOIEMENT
-  // URL du webhook n8n (Production URL). n8n écrit dans Grist côté
-  // serveur : aucune clé API n'est exposée dans cette page.
+  // CONFIGURATION GRIST — POST anonyme vers table table_referents_mobilite_grist
+  // Prérequis Grist : règle user.Access != OWNER → +C (créer uniquement)
   // ===================================================================
-  const WEBHOOK_URL = "https://VOTRE-INSTANCE-n8n/webhook/mondiagmob-referents";
+  const GRIST_SERVER = 'https://grist.incubateur.dnum.din.developpement-durable.gouv.fr';
+  const GRIST_DOC_ID = 'cfiCVUp2f85MBLuwwzUiGV';
+  const GRIST_TABLE  = 'table_referents_mobilite_grist';
 
   // --- Génération dynamique des échelles ---
   document.querySelectorAll(".scale").forEach(scale => {
@@ -458,6 +459,15 @@
     });
   });
 
+  // --- Helpers ---
+  function radioValue(name) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : '';
+  }
+  function checkboxValues(name) {
+    return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value).join('; ');
+  }
+
   // --- Soumission ---
   const form = document.getElementById("questionnaire");
   const feedback = document.getElementById("feedback");
@@ -468,28 +478,54 @@
     feedback.className = "feedback";
     feedback.textContent = "";
 
-    const data = {};
-    const fd = new FormData(form);
-    for (const [key, value] of fd.entries()) {
-      if (data[key]) {
-        if (Array.isArray(data[key])) data[key].push(value);
-        else data[key] = [data[key], value];
-      } else {
-        data[key] = value;
-      }
-    }
-    data.horodatage = new Date().toISOString();
+    const fields = {
+      Date_Reponse:              new Date().toISOString().slice(0, 16).replace('T', ' '),
+      administration:            document.getElementById('administration').value.trim(),
+      fonction:                  document.getElementById('fonction').value.trim(),
+      role_mobilite:             radioValue('role_mobilite'),
+      role_mobilite_autre:       document.getElementById('role_mobilite_autre').value.trim(),
+      raison_participation:      document.getElementById('raison_participation').value.trim(),
+      resultats_attendus:        document.getElementById('resultats_attendus').value.trim(),
+      objectif_hierarchie:       radioValue('objectif_hierarchie'),
+      objectif_lequel:           document.getElementById('objectif_lequel').value.trim(),
+      objectif_budget:           document.getElementById('objectif_budget').value.trim(),
+      objectif_non_detail:       document.getElementById('objectif_non_detail').value.trim(),
+      pdm_existant:              radioValue('pdm_existant'),
+      contrefactuel:             radioValue('contrefactuel'),
+      contrefactuel_detail:      document.getElementById('contrefactuel_detail').value.trim(),
+      temps_mise_en_place:       radioValue('temps_mise_en_place'),
+      charge_vs_benefice:        radioValue('charge_vs_benefice'),
+      charge_commentaire:        document.getElementById('charge_commentaire').value.trim(),
+      usage_tdb:                 radioValue('usage_tdb'),
+      tdb_usages:                checkboxValues('tdb_usages'),
+      tdb_indicateurs_utiles:    document.getElementById('tdb_indicateurs_utiles').value.trim(),
+      tdb_manques:               document.getElementById('tdb_manques').value.trim(),
+      tdb_non_raisons:           checkboxValues('tdb_non_raisons'),
+      tdb_non_detail:            document.getElementById('tdb_non_detail').value.trim(),
+      impact_pdm:                radioValue('impact_pdm'),
+      impact_pdm_detail:         document.getElementById('impact_pdm_detail').value.trim(),
+      actions_decoulent:         radioValue('actions_decoulent'),
+      actions_lesquelles:        document.getElementById('actions_lesquelles').value.trim(),
+      note_globale:              parseInt(radioValue('note_globale')) || null,
+      recommandation:            radioValue('recommandation'),
+      recommandation_raison:     document.getElementById('recommandation_raison').value.trim(),
+      autres_dispositifs:        radioValue('autres_dispositifs'),
+      autres_dispositifs_detail: document.getElementById('autres_dispositifs_detail').value.trim(),
+    };
 
     btn.disabled = true;
     btn.textContent = "Envoi en cours…";
 
     try {
-      const res = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) throw new Error("HTTP " + res.status);
+      const res = await fetch(
+        `${GRIST_SERVER}/api/docs/${GRIST_DOC_ID}/tables/${GRIST_TABLE}/records`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ records: [{ fields }] })
+        }
+      );
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
       form.style.display = "none";
       document.getElementById("successScreen").classList.add("visible");
       window.scrollTo({ top: 0, behavior: "smooth" });
