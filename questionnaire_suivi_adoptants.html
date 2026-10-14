@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Où en êtes-vous, quelques mois après ? - Mon Diag'Mob</title>
+<!--
+  Mon Diag'Mob - questionnaire de suivi d'octobre 2026, version A.
+  Page GÉNÉRIQUE : même lien pour tous ; l'adresse e-mail est demandée en tête de formulaire
+  et sert à relier la réponse à celle de juin. Envoi par POST anonyme (création seule)
+  vers la table Grist SuiviAdoptants. Colonnes : voir README_questionnaires_suivi.md.
+  Test sans rien envoyer : ajouter ?preview=1 à l'adresse.
+-->
+<style>
+:root{--bleu-france:#000091;--rouge-marianne:#E1000F;--lavande:#ECECFE;--gris-fond:#f6f6f6;--gris-bordure:#ddd;--gris-texte:#3a3a3a;--gris-clair:#666;--blanc:#fff;--vert-succes:#18753c;--rouge-erreur:#ce0500;--orange-warn:#b34000}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Marianne",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--gris-texte);background:var(--gris-fond);line-height:1.6;-webkit-font-smoothing:antialiased}
+.header{background:var(--blanc);border-bottom:1px solid var(--gris-bordure);box-shadow:0 2px 4px rgba(0,0,0,.04)}
+.header-inner{max-width:780px;margin:0 auto;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1.25rem}
+.header img{display:block;height:auto;max-width:100%}
+.header-titles{border-left:2px solid var(--gris-bordure);padding-left:1.25rem}
+.header-titles h1{font-size:1.15rem;color:var(--bleu-france);font-weight:700;line-height:1.3}
+.header-titles p{font-size:.85rem;color:var(--gris-clair);margin-top:.15rem}
+.container{max-width:780px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.banner{padding:1.25rem 1.5rem;border-radius:0 4px 4px 0;margin-bottom:1.5rem;font-size:.95rem}
+.banner.err{background:#fff4e5;border-left:4px solid var(--orange-warn);color:var(--orange-warn);font-weight:600}
+.banner.ok{background:#b8fec9;border-left:4px solid var(--vert-succes);color:var(--vert-succes);font-weight:600}
+.errlist{margin:8px 0 0 18px;font-weight:400}
+.intro{background:var(--lavande);border-left:4px solid var(--bleu-france);padding:1.25rem 1.5rem;border-radius:0 4px 4px 0;margin-bottom:2.5rem}
+.intro p{font-size:.95rem;margin-bottom:.5rem}
+.intro p:last-child{margin-bottom:0}
+.intro strong{color:var(--bleu-france)}
+.rappel{margin:0 0 1.5rem;padding:.75rem 1rem;background:var(--lavande);border-left:4px solid var(--bleu-france);border-radius:0 4px 4px 0;font-weight:600;color:var(--bleu-france)}
+.section,.card{background:var(--blanc);border:1px solid var(--gris-bordure);border-radius:6px;padding:1.75rem;margin-bottom:1.5rem}
+.section-num{display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--bleu-france);background:var(--lavande);padding:.2rem .6rem;border-radius:4px;margin-bottom:.75rem}
+.section h2{font-size:1.2rem;color:var(--gris-texte);margin-bottom:1.25rem;font-weight:700}
+.card h2{font-size:1.2rem;color:var(--bleu-france);margin-bottom:.75rem}
+fieldset.q,div.q{border:0;padding:0;margin:0 0 1.5rem}
+fieldset.q:last-child,div.q:last-child{margin-bottom:0}
+legend,div.q>label{display:block;font-weight:600;font-size:.98rem;margin-bottom:.5rem;padding:0}
+.hint{color:var(--gris-clair);font-size:.85rem;margin:0 0 .5rem;font-weight:400}
+.opt-tag{font-weight:400;color:var(--gris-clair);font-size:.85rem}
+.opt{display:flex;align-items:flex-start;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--gris-bordure);border-radius:4px;cursor:pointer;margin-top:.5rem;transition:all .12s ease;background:var(--blanc)}
+.opt:hover{border-color:var(--bleu-france);background:#fafaff}
+.opt input{margin-top:.25rem;accent-color:var(--bleu-france);width:1.05rem;height:1.05rem;flex-shrink:0}
+.opt span{font-size:.95rem}
+.sub{margin-top:.75rem;padding:1rem;background:#fafaff;border:1px dashed var(--bleu-france);border-radius:6px}
+.sub label{display:block;font-weight:600;font-size:.95rem;margin-bottom:.4rem}
+input[type=text],input[type=email],input[type=number],textarea{width:100%;padding:.6rem .75rem;border:1px solid #929292;border-bottom:2px solid var(--bleu-france);border-radius:4px 4px 0 0;background:#eee;font-family:inherit;font-size:.95rem;color:var(--gris-texte)}
+textarea{resize:vertical;min-height:80px}
+input:focus,textarea:focus{outline:2px solid var(--bleu-france);outline-offset:2px}
+.days{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem}
+.day{display:flex;flex-direction:column}
+.day label{font-weight:400;font-size:.92rem;margin-bottom:.25rem}
+.total{font-weight:600;margin-top:.75rem;font-size:.95rem}
+.total.bad{color:var(--rouge-erreur)}
+.q.invalid{outline:2px solid var(--rouge-erreur);outline-offset:6px;border-radius:4px}
+.submit-zone{text-align:center;margin-top:2rem}
+button{background:var(--bleu-france);color:var(--blanc);border:none;padding:.85rem 2.5rem;font-size:1rem;font-weight:600;font-family:inherit;border-radius:4px;cursor:pointer;transition:background .15s ease}
+button:hover{background:#00006d}
+button:disabled{background:#929292;cursor:not-allowed}
+.success-screen{text-align:center;padding:3rem 1.5rem}
+.success-screen .check{width:64px;height:64px;margin:0 auto 1.5rem;background:var(--vert-succes);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2rem}
+.success-screen h2{color:var(--bleu-france);margin-bottom:.75rem}
+[hidden]{display:none!important}
+footer{text-align:center;font-size:.8rem;color:var(--gris-clair);padding:1.5rem}
+@media (max-width:560px){.header-inner{flex-direction:column;align-items:flex-start;gap:.75rem}.header-titles{border-left:none;padding-left:0}.container{padding:1.25rem 1rem 3rem}.section{padding:1.25rem}}
+</style>
+</head>
+<body>
+<header class="header"><div class="header-inner">
+<img src="https://static.covoiturage.beta.gouv.fr/Logo_M_Tx_MDM_fb9df9f2ba.png" width="260" height="100" alt="Mon Diag'Mob - Ministère de la Transition écologique" />
+<div class="header-titles"><h1>Où en êtes-vous, quelques mois après ?</h1><p>Où en êtes-vous depuis juin ?</p></div>
+</div></header>
+<div class="container">
+<div id="bannerPreview" class="banner err" hidden>Mode aperçu : le formulaire est affiché et rien n'est envoyé.</div>
+<div id="bannerDone" class="banner ok" hidden>Vous avez déjà répondu à ce questionnaire depuis cet appareil. Merci !</div>
+<div id="successScreen" class="success-screen" hidden><div class="check">✓</div><h2>Merci pour votre participation !</h2><p>Vos réponses ont bien été enregistrées. Vous pouvez fermer cette page.</p></div>
+<form id="questionnaire" novalidate>
+<div class="intro">
+<p><strong>Savoir où vous en êtes, quelques mois après, est essentiel pour Mon Diag&#x27;Mob.</strong></p>
+<p>Le questionnaire prend 3 minutes, merci d&#x27;avance !</p>
+<p>En juin, vous nous avez indiqué avoir commencé à expérimenter un nouveau mode de transport pour vos trajets domicile-travail. Nous aimerions savoir où vous en êtes aujourd&#x27;hui, que cela continue ou non : les deux réponses nous aident à améliorer le dispositif. Il n'y a pas de bonne réponse.</p>
+</div>
+<div class="section"><span class="section-num">Partie 1</span><h2>Votre mobilité aujourd&#x27;hui</h2><div class="q" id="emailBox" data-label="Votre adresse e-mail professionnelle"><label for="email">Votre adresse e-mail professionnelle ?</label><p class="hint">Vos réponses restent confidentielles. Cette fois, nous les relions à celles de juin pour mesurer l&#x27;évolution ; seule l&#x27;équipe Mon Diag&#x27;Mob y a accès, aucun nom n&#x27;apparaît dans les résultats, et elles sont conservées 6 mois, le temps de l&#x27;expérimentation, puis supprimées. À la fin, vous pouvez, si vous le souhaitez, accepter d&#x27;être recontacté pour un échange de 30 minutes. Contact : contact@mondiagmob.beta.gouv.fr.</p><input type="email" id="email" name="email" maxlength="200" autocomplete="email" inputmode="email" placeholder="prenom.nom@administration.gouv.fr"></div>
+<fieldset class="q" id="daysBox"><legend>Lors de votre dernière semaine de travail habituelle (hors congés), combien de jours êtes-vous venu au travail :</legend><p class="hint">Le total, télétravail compris, ne peut pas dépasser 5 jours.</p><div class="days"><div class="day"><label for="j_voiture">Seul en voiture</label><input type="number" id="j_voiture" name="j_voiture" min="0" max="5" step="1" value="0" inputmode="numeric"></div><div class="day"><label for="j_covoit">En covoiturage</label><input type="number" id="j_covoit" name="j_covoit" min="0" max="5" step="1" value="0" inputmode="numeric"></div><div class="day"><label for="j_velo">À vélo (VAE compris)</label><input type="number" id="j_velo" name="j_velo" min="0" max="5" step="1" value="0" inputmode="numeric"></div><div class="day"><label for="j_tc">En transports en commun</label><input type="number" id="j_tc" name="j_tc" min="0" max="5" step="1" value="0" inputmode="numeric"></div><div class="day"><label for="j_marche">À pied</label><input type="number" id="j_marche" name="j_marche" min="0" max="5" step="1" value="0" inputmode="numeric"></div><div class="day"><label for="j_teletravail">En télétravail</label><input type="number" id="j_teletravail" name="j_teletravail" min="0" max="5" step="1" value="0" inputmode="numeric"></div></div><p class="total" id="daysTotal" aria-live="polite">Total : 0 / 5 jours</p></fieldset>
+<div class="rappel" id="rappel"></div>
+<fieldset class="q" data-required="1" data-name="statut" data-label="Diriez-vous que vous avez atteint votre objectif ?"><legend>Diriez-vous que vous avez atteint votre objectif ?</legend><label class="opt"><input type="radio" name="statut" value="continue"> <span>Oui, je continue régulièrement depuis juin</span></label><label class="opt"><input type="radio" name="statut" value="moins"> <span>En partie, moins souvent depuis juin</span></label><label class="opt"><input type="radio" name="statut" value="autre_mode"> <span>J&#x27;ai changé de mode alternatif</span></label><label class="opt"><input type="radio" name="statut" value="arret"> <span>J&#x27;ai arrêté</span></label></fieldset>
+<fieldset class="q" data-show-if="statut=autre_mode" data-required-check="1" data-name="nouveau_mode" data-label="Pour quel mode ?"><legend>Pour quel mode ?</legend><p class="hint">Plusieurs réponses possibles.</p><label class="opt"><input type="checkbox" name="nouveau_mode" value="covoit"> <span>Covoiturage</span></label><label class="opt"><input type="checkbox" name="nouveau_mode" value="velo"> <span>Vélo / VAE</span></label><label class="opt"><input type="checkbox" name="nouveau_mode" value="tc"> <span>Transports en commun</span></label><label class="opt"><input type="checkbox" name="nouveau_mode" value="marche"> <span>Marche</span></label></fieldset><fieldset class="q" data-show-if="statut=moins,autre_mode,arret" data-required="1" data-name="quand" data-label="Quand avez-vous levé le pied ?"><legend>Quand avez-vous levé le pied ?</legend><label class="opt"><input type="radio" name="quand" value="ete"> <span>Pendant l&#x27;été</span></label><label class="opt"><input type="radio" name="quand" value="rentree"> <span>À la rentrée</span></label><label class="opt"><input type="radio" name="quand" value="recemment"> <span>Récemment</span></label></fieldset>
+<fieldset class="q" data-show-if="statut=moins,autre_mode,arret" data-required="1" data-name="frein" data-label="Quel a été le principal frein ?"><legend>Quel a été le principal frein ?</legend><label class="opt"><input type="radio" name="frein" value="horaires"> <span>Contraintes horaires ou personnelles</span></label><label class="opt"><input type="radio" name="frein" value="partenaire"> <span>Pas de partenaire de covoiturage</span></label><label class="opt"><input type="radio" name="frein" value="trajet"> <span>Trajet ou infrastructures inadaptés (distance, sécurité, desserte)</span></label><label class="opt"><input type="radio" name="frein" value="cout"> <span>Coût ou matériel</span></label><label class="opt"><input type="radio" name="frein" value="accompagnement"> <span>Besoin d&#x27;un accompagnement humain</span></label><label class="opt"><input type="radio" name="frein" value="situation"> <span>Changement de situation (poste, déménagement, horaires)</span></label><label class="opt"><input type="radio" name="frein" value="meteo"> <span>La météo ou la saison</span></label><label class="opt"><input type="radio" name="frein" value="envie"> <span>Manque de temps ou d&#x27;envie</span></label><label class="opt"><input type="radio" name="frein" value="autre"> <span>Autre</span></label><div class="sub" data-show-if="frein=autre" hidden><label for="frein_autre">Précisez <span class="opt-tag">(facultatif)</span></label><input type="text" id="frein_autre" name="frein_autre" maxlength="300"></div></fieldset>
+<fieldset class="q" data-show-if="statut=continue" data-max="2" data-name="leviers" data-label="Qu&#x27;est-ce qui fait que ça tient ?"><legend>Qu&#x27;est-ce qui fait que ça tient ?</legend><p class="hint">Deux réponses au maximum.</p><label class="opt"><input type="checkbox" name="leviers" value="economies"> <span>Les économies réalisées</span></label><label class="opt"><input type="checkbox" name="leviers" value="habitude"> <span>L&#x27;habitude installée</span></label><label class="opt"><input type="checkbox" name="leviers" value="partenaire"> <span>Un partenaire fiable</span></label><label class="opt"><input type="checkbox" name="leviers" value="forme"> <span>La forme ou le bien-être</span></label><label class="opt"><input type="checkbox" name="leviers" value="ecologie"> <span>L&#x27;engagement écologique</span></label><label class="opt"><input type="checkbox" name="leviers" value="administration"> <span>Le soutien de mon administration (forfait, vélos de service, horaires)</span></label><label class="opt"><input type="checkbox" name="leviers" value="autre"> <span>Autre</span></label></fieldset></div>
+<div class="section"><span class="section-num">Partie 2</span><h2>Pour finir</h2><fieldset class="q" data-show-if="statut=continue,moins,autre_mode" data-required="1" data-name="contact" data-label="Accepteriez-vous d&#x27;être le contact d&#x27;un collègue qui hésite à essayer ?"><legend>Accepteriez-vous d&#x27;être le contact d&#x27;un collègue qui hésite à essayer ?</legend><label class="opt"><input type="radio" name="contact" value="oui"> <span>Oui</span></label><label class="opt"><input type="radio" name="contact" value="non"> <span>Non</span></label></fieldset>
+<fieldset class="q" data-required-check="1" data-name="aide" data-label="Qu&#x27;est-ce qui, dans Mon Diag&#x27;Mob, vous a été utile ?"><legend>Qu&#x27;est-ce qui, dans Mon Diag&#x27;Mob, vous a été utile ?</legend><p class="hint">Plusieurs réponses possibles.</p><label class="opt"><input type="checkbox" name="aide" value="bilan"> <span>Le bilan chiffré de mes trajets (coût, temps, CO₂)</span></label><label class="opt"><input type="checkbox" name="aide" value="carte"> <span>La carte de mon trajet</span></label><label class="opt"><input type="checkbox" name="aide" value="alternative"> <span>La proposition d&#x27;alternative et ses gains</span></label><label class="opt"><input type="checkbox" name="aide" value="mise_en_relation"> <span>La mise en relation avec des collègues</span></label><label class="opt"><input type="checkbox" name="aide" value="rappels"> <span>Les e-mails de rappel</span></label><label class="opt"><input type="checkbox" name="aide" value="rien"> <span>Rien de tout cela</span></label></fieldset><div class="q"><label for="aide_manque">Qu&#x27;est-ce qui vous aurait aidé davantage ? <span class="opt-tag">(facultatif)</span></label><textarea id="aide_manque" name="aide_manque" rows="3" maxlength="1000"></textarea></div><div class="q"><label for="commentaire">Un mot à ajouter ? <span class="opt-tag">(facultatif)</span></label><p class="hint">Prenez notamment le temps de détailler les freins au changement de mobilité. Ces précisions sont très utiles.</p><textarea id="commentaire" name="commentaire" rows="3" maxlength="1000"></textarea></div>
+<fieldset class="q" data-required="1" data-name="entretien" data-label="Accepteriez-vous un échange de 30 minutes avec notre équipe ?"><legend>Accepteriez-vous un échange de 30 minutes avec notre équipe ?</legend><label class="opt"><input type="radio" name="entretien" value="oui"> <span>Oui</span></label><label class="opt"><input type="radio" name="entretien" value="non"> <span>Non</span></label><div class="sub" data-show-if="entretien=oui" hidden><label for="creneaux">Vos disponibilités <span class="opt-tag">(facultatif)</span></label><input type="text" id="creneaux" name="creneaux" maxlength="300" placeholder="Ex. : mardi ou jeudi matin"><p class="hint">Nous vous écrirons à l'adresse e-mail déjà utilisée pour ce questionnaire.</p></div></fieldset></div>
+<div id="feedback" class="banner err" hidden role="alert"></div>
+<div class="submit-zone"><button type="submit" id="btnSubmit">Envoyer mes réponses</button></div>
+</form>
+</div>
+<footer>Mon Diag'Mob - la solution pour avoir une mobilité gagnante</footer>
+<script>
+const CONFIG = {"server": "https://grist.incubateur.dnum.din.developpement-durable.gouv.fr", "docId": "cfiCVUp2f85MBLuwwzUiGV", "table": "SuiviAdoptants", "lockPrefix": "diagmob_suivi_a_done_"};
+const params = new URLSearchParams(location.search);
+const PREVIEW = params.get('preview') === '1';
+const form = document.getElementById('questionnaire');
+const btn = document.getElementById('btnSubmit');
+const feedback = document.getElementById('feedback');
+const LOCK = CONFIG.lockPrefix + 'v1';
+
+function lockGet(){ try { return localStorage.getItem(LOCK); } catch(e){ return null; } }
+function lockSet(){ try { localStorage.setItem(LOCK, '1'); } catch(e){} }
+
+const MODES = {velo:'à vélo (VAE compris)', covoit:'en covoiturage', tc:'en transports en commun', marche:'à pied'};
+const ECH = {mois:'dans le mois', '3mois':'dans les 3 mois', '6mois':'dans les 6 mois', nd:'sans échéance définie'};
+function modeLabel(){ return MODES[params.get('m')] || null; }
+function jours(){ const j = parseInt(params.get('j'), 10); return (j >= 1 && j <= 5) ? j : null; }
+
+function radioValue(name){ const r = form.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ''; }
+
+function updateVisibility(){
+  form.querySelectorAll('[data-show-if]').forEach(function(el){
+    const cond = el.getAttribute('data-show-if');
+    let show = false;
+    const m = cond.match(/^(\w+)(!=|=)(.+)$/);
+    if (m){
+      const val = radioValue(m[1]);
+      const list = m[3].split(',');
+      show = (m[2] === '=') ? list.indexOf(val) !== -1 : (val !== '' && list.indexOf(val) === -1);
+    }
+    if (el.getAttribute('data-force-hide') === '1') show = false;
+    el.hidden = !show;
+  });
+}
+function visible(el){ return !el.closest('[hidden]'); }
+
+function updateTotal(){
+  let t = 0;
+  form.querySelectorAll('#daysBox input[type=number]').forEach(function(i){ const v = parseInt(i.value, 10); if (v > 0) t += v; });
+  const el = document.getElementById('daysTotal');
+  el.textContent = 'Total : ' + t + ' / 5 jours';
+  el.classList.toggle('bad', t > 5);
+  return t;
+}
+
+function limitChecks(){
+  form.querySelectorAll('fieldset[data-max]').forEach(function(fs){
+    const max = parseInt(fs.getAttribute('data-max'), 10);
+    const boxes = fs.querySelectorAll('input[type=checkbox]');
+    const n = Array.prototype.filter.call(boxes, function(b){ return b.checked; }).length;
+    boxes.forEach(function(b){ b.disabled = (n >= max && !b.checked); });
+  });
+}
+
+function checkedList(name){
+  return Array.prototype.map.call(form.querySelectorAll('input[name="' + name + '"]:checked'), function(i){ return i.value; });
+}
+function textValue(name){ const el = form.elements[name]; return el && visible(el) ? el.value.trim() : ''; }
+
+function validate(){
+  const missing = [];
+  form.querySelectorAll('.q').forEach(function(q){ q.classList.remove('invalid'); });
+  form.querySelectorAll('fieldset[data-required="1"]').forEach(function(fs){
+    if (!visible(fs)) return;
+    if (!radioValue(fs.getAttribute('data-name'))){ fs.classList.add('invalid'); missing.push(fs); }
+  });
+  form.querySelectorAll('fieldset[data-required-check="1"]').forEach(function(fs){
+    if (visible(fs) && checkedList(fs.getAttribute('data-name')).length === 0){ fs.classList.add('invalid'); missing.push(fs); }
+  });
+  const em = document.getElementById('email');
+  const emBox = document.getElementById('emailBox');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test((em.value || '').trim())){ emBox.classList.add('invalid'); missing.unshift(emBox); }
+  const total = updateTotal();
+  const box = document.getElementById('daysBox');
+  if (total < 1 || total > 5){ box.classList.add('invalid'); missing.unshift(box); }
+  return missing;
+}
+
+function setFeedback(kind, text, list){
+  feedback.className = 'banner ' + kind;
+  feedback.textContent = text;
+  if (list && list.length){
+    const ul = document.createElement('ul'); ul.className = 'errlist';
+    list.forEach(function(s){ const li = document.createElement('li'); li.textContent = s; ul.appendChild(li); });
+    feedback.appendChild(ul);
+  }
+  feedback.hidden = false;
+}
+
+async function submit(ev){
+  ev.preventDefault();
+  if (!PREVIEW && lockGet()) return;
+  const missing = validate();
+  if (missing.length){
+    const labels = missing.map(function(m){ return m.id === 'daysBox' ? 'Nombre de jours par mode (total entre 1 et 5)' : (m.id === 'emailBox' ? 'Votre adresse e-mail professionnelle (adresse valide)' : m.getAttribute('data-label')); });
+    setFeedback('err', 'Merci de compléter les questions suivantes :', labels);
+    missing[0].scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  if (PREVIEW){
+    setFeedback('ok', "Aperçu : le formulaire est valide. Rien n'a été envoyé ni enregistré.");
+    feedback.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Envoi en cours…';
+  const fields = collect();
+  fields.Date_Reponse = Math.floor(Date.now() / 1000);
+  Object.keys(fields).forEach(function(k){ if (fields[k] === '' || fields[k] === null || fields[k] === undefined) delete fields[k]; });
+  try {
+    const res = await fetch(CONFIG.server + '/api/docs/' + CONFIG.docId + '/tables/' + CONFIG.table + '/records', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({records: [{fields: fields}]})
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    lockSet();
+    form.hidden = true; feedback.hidden = true;
+    document.getElementById('successScreen').hidden = false;
+    window.scrollTo(0, 0);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Envoyer mes réponses';
+    setFeedback('err', "L'envoi n'a pas abouti. Vérifiez votre connexion puis réessayez. Si le problème persiste, répondez à l&#x27;e-mail qui contenait ce lien, ou écrivez à contact@mondiagmob.beta.gouv.fr.");
+  }
+}
+
+function init(){
+  if (PREVIEW){
+    document.getElementById('bannerPreview').hidden = false;
+  } else if (lockGet()){
+    document.getElementById('bannerDone').hidden = false;
+    form.hidden = true; return;
+  }
+  const r = document.getElementById('rappel');
+  r.textContent = buildRappel();
+  form.addEventListener('change', function(){ updateVisibility(); updateTotal(); limitChecks(); });
+  form.addEventListener('input', updateTotal);
+  form.addEventListener('submit', submit);
+  applyPageRules();
+  aideExclusive();
+  updateVisibility(); updateTotal();
+}
+document.addEventListener('DOMContentLoaded', init);
+
+function intVal(n){ const v = parseInt(form.elements[n].value, 10); return isNaN(v) ? 0 : v; }
+function visibleRadio(name){ const fs = form.querySelector('fieldset[data-name="' + name + '"]'); return (fs && visible(fs)) ? radioValue(name) : ''; }
+
+function visibleChecks(name){ const fs = form.querySelector('fieldset[data-name="' + name + '"]'); return (fs && visible(fs)) ? checkedList(name).join(', ') : ''; }
+function collect(){
+  const f = {};
+  f.SA_Email = textValue('email');
+  f.SA_Jours_Voiture_Seul = intVal('j_voiture'); f.SA_Jours_Covoit = intVal('j_covoit'); f.SA_Jours_Velo = intVal('j_velo');
+  f.SA_Jours_TC = intVal('j_tc'); f.SA_Jours_Marche = intVal('j_marche'); f.SA_Jours_Teletravail = intVal('j_teletravail');
+  f.SA_Statut = radioValue('statut');
+  f.SA_Nouveau_Mode = visibleChecks('nouveau_mode');
+  f.SA_Aide = checkedList('aide').join(', '); f.SA_Aide_Manque = textValue('aide_manque');
+  f.SA_Quand = visibleRadio('quand'); f.SA_Frein = visibleRadio('frein'); f.SA_Frein_Autre = textValue('frein_autre');
+  const lev = form.querySelector('fieldset[data-name="leviers"]');
+  f.SA_Leviers = (lev && visible(lev)) ? checkedList('leviers').join(', ') : '';
+  f.SA_Contact_Collegue = visibleRadio('contact');
+  f.SA_Commentaire = textValue('commentaire');
+  f.SA_Entretien = radioValue('entretien'); f.SA_Entretien_Creneaux = textValue('creneaux');
+  return f;
+}
+function buildRappel(){ return "En juin, vous veniez d'adopter un nouveau mode de transport."; }
+
+function aideExclusive(){
+  form.querySelectorAll('input[name="aide"]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      if (cb.value === 'rien' && cb.checked){ form.querySelectorAll('input[name="aide"]').forEach(function(o){ if (o !== cb) o.checked = false; }); }
+      else if (cb.checked){ var r = form.querySelector('input[name="aide"][value="rien"]'); if (r) r.checked = false; }
+    });
+  });
+}
+function applyPageRules(){}
+</script>
+</body>
+</html>
